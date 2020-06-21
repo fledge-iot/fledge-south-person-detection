@@ -40,4 +40,3 @@ if [ ${ID} != "mendel" ]; then
   sudo apt-get update;
   sudo apt-get install libedgetpu1-std;
 fi
-

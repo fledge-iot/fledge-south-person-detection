@@ -1,28 +1,40 @@
-
+# -*- coding: utf-8 -*-
 
 # FLEDGE_BEGIN
 # See: http://fledge.readthedocs.io/
 # FLEDGE_END
 
-""" Human Detector  async plugin for any platform """
-import copy
+""" Human Detector Plugin
+"""
+__author__ = "Amandeep Singh Arora, Deepanshu Yadav"
+__copyright__ = "Copyright (c) 2020 Dianomic Systems Inc."
+__license__ = "Apache 2.0"
+__version__ = "${VERSION}"
+
 import asyncio
+import copy
 import uuid
 import logging
 import os
-import numpy as np
+import time
+import subprocess
+
+import threading
 from threading import Thread
+from aiohttp import web, MultipartWriter
+
+
+import cv2
+import numpy as np
+
 from fledge.common import logger
 from fledge.plugins.common import utils
 import async_ingest
-import cv2
-import time
-import subprocess
+
 from fledge.plugins.south.person_detection.videostream import VideoStream
 from fledge.plugins.south.person_detection.inference import Inference
-import asyncio
-from aiohttp import web, MultipartWriter
-import  threading
+
+
 _LOGGER = logger.setup(__name__, level=logging.INFO)
 BACKGROUND_TASK = False
 
@@ -37,11 +49,6 @@ def check_background():
     else:
         return False
 
-
-__author__ = "Amandeep Singh Arora, Deepanshu Yadav"
-__copyright__ = "Copyright (c) 2020 Dianomic Systems Inc."
-__license__ = "Apache 2.0"
-__version__ = "${VERSION}"
 _DEFAULT_CONFIG = {
     'plugin': {
         'description': 'Person Detection On Fledge',
@@ -176,7 +183,7 @@ def wait_for_frame(stream):
            Raises: None
        """
     while True:
-        if stream.frame is not None:
+        if stream.frame:
             return
         else:
             time.sleep(0.2)
@@ -214,7 +221,6 @@ async def mjpeg_handler(request):
     encode_param = (int(cv2.IMWRITE_JPEG_QUALITY), 90)
 
     while True:
-
         if shutdown_in_progress:
             break
         if FRAME is None:
@@ -355,7 +361,6 @@ def camera_loop(**kwargs):
 
         # Taking the frame the stream  
         frame1 = videostream.read()
-
         frame = frame1.copy()
 
         # BGR to RGB 
@@ -452,7 +457,6 @@ def camera_loop(**kwargs):
             cv2.destroyWindow(window_name)
             break
         else:
-
             # Calculate framerate
             t_end = cv2.getTickCount()
             time1 = (t_end-t1)/freq
@@ -641,7 +645,6 @@ def plugin_shutdown(handle):
         async_thread = None
         loop = None
         _LOGGER.info('Plugin has shutdown')
-
     except Exception as e:
         _LOGGER.exception(str(e))
         raise
