@@ -31,7 +31,7 @@ case "$package_manager" in
     deb)
         ;;
     rpm)
-        echo "RPM Package building for ${plugin_name} is not supported!!"
+        echo "RPM Package building for ${plugin_name} is not supported!"
         exit 1
         ;;
 esac

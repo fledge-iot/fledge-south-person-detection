@@ -183,7 +183,7 @@ def wait_for_frame(stream):
            Raises: None
        """
     while True:
-        if stream.frame:
+        if stream.frame is not None:
             return
         else:
             time.sleep(0.2)

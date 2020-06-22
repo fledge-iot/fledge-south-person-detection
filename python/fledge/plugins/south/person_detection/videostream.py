@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 # FLEDGE_BEGIN
 # See: http://fledge.readthedocs.io/
 # FLEDGE_END
