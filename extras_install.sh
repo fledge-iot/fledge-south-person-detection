@@ -35,9 +35,7 @@ url=$(echo -n "https://dl.google.com/coral/python/tflite_runtime-2.1.0.post1-cp"
 pip3 install $url
 
 if [ ${ID} != "mendel" ]; then
-  echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" | sudo tee /etc/apt/sources.list.d/coral-edgetpu.list;
-  curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -;
-  sudo apt-get update;
-  sudo apt-get install libedgetpu1-std;
+  echo "In order to use Edge TPU, please install edge TPU runtime, libedgetpu1-std
+https://coral.ai/software/#debian-packages
+note: This is pre-installed on Coral Dev Board."
 fi
-

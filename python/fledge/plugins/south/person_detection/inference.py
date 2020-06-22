@@ -1,7 +1,19 @@
-import numpy as np
-from fledge.common import logger
+# -*- coding: utf-8 -*-
+
+# FLEDGE_BEGIN
+# See: http://fledge.readthedocs.io/
+# FLEDGE_END
+
+""" Helper Class for loading the model and performing the inference on it 
+"""
+
 import logging
 import os
+
+import numpy as np
+
+from fledge.common import logger
+
 _LOGGER = logger.setup(__name__, level=logging.INFO)
 
 EDGETPU_SHARED_LIB = 'libedgetpu.so.1'
@@ -12,16 +24,12 @@ try:
     try:
         from tflite_runtime.interpreter import load_delegate
     except ImportError:
-        _LOGGER.exception("Edge TPU Support is not found in your tensorflow installation ")
+        _LOGGER.warning("Edge TPU support is not found in your tensorflow installation!")
         pass
-
 except ImportError as e:
-    _LOGGER.exception("Tensoflow installation not found ")
+    _LOGGER.exception("Tensorflow installation not found.")
 
-"""
-    Helper Class for loading  the model and performing the inference 
-    on it. 
-"""
+
 
 
 class Inference:
@@ -51,7 +59,6 @@ class Inference:
         if enable_tpu == 'true':
             try:
                 # loading the Edge TPU Runtime
-
                 model, *device = model.split('@')
                 if os.path.exists(model):
                     load_delegate(EDGETPU_SHARED_LIB)
@@ -59,13 +66,13 @@ class Inference:
                                                    experimental_delegates=[load_delegate(EDGETPU_SHARED_LIB,
                                                                          {'device': device[0]} if device else {})])
                 else:
-                    _LOGGER.exception("Please make sure  the model file exists ")
+                    _LOGGER.exception("Please make sure the model file exists")
 
             except OSError:
-                 _LOGGER.exception("Please install runtime for edge tpu ")
+                 _LOGGER.exception("Please install runtime for edge tpu")
 
             except ValueError:
-                _LOGGER.exception("Make sure edge tpu is plugged in ")
+                _LOGGER.exception("Make sure edge tpu is plugged in")
 
         else:
 
@@ -107,4 +114,3 @@ class Inference:
         scores = self.interpreter.get_tensor(self.output_details[2]['index'])[0]
 
         return boxes, classes, scores
-
