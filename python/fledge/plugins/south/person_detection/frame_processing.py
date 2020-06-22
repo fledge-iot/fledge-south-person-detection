@@ -21,13 +21,15 @@ import async_ingest
 from fledge.plugins.south.person_detection.videostream import VideoStream
 from fledge.plugins.south.person_detection.inference import Inference
 from fledge.plugins.south.person_detection.web_stream import WebStream
-
+import fledge.plugins.south.person_detection.person_detection.c_callback as c_callback
+import fledge.plugins.south.person_detection.person_detection.c_callback as c_ingest_ref
 
 _LOGGER = logger.setup(__name__, level=logging.INFO)
 
 
 class FrameProcessor(Thread):
     def __init__(self, handle):
+        super(FrameProcessor, self).__init__()
         # if floating point model is used we need to subtract the mean and divide 
         # by standard deviation
         self.input_mean = handle['input_mean']
@@ -41,7 +43,7 @@ class FrameProcessor(Thread):
 
         model = handle['model_file']['value']
         labels = handle['labels_file']['value']
-        self.asset_name = handle['self.asset_name']['value']
+        self.asset_name = handle['asset_name']['value']
         enable_tpu = handle['enable_edge_tpu']['value']
         self.min_conf_threshold = float(handle['min_conf_threshold']['value'])
 
@@ -59,7 +61,7 @@ class FrameProcessor(Thread):
 
         source = int(handle['camera_id']['value'])
 
-        if handle['self.enable_window']['value'] == 'true':
+        if handle['enable_window']['value'] == 'true':
             self.enable_window = True
         else:
             self.enable_window = False
@@ -242,7 +244,7 @@ class FrameProcessor(Thread):
             # All the results have been drawn on the frame, so it's time to display it.
             if self.shutdown_in_progress:
                 self.videostream.stop()
-                time.sleep(3)
+                time.sleep(2)
                 # cv2.destroyWindow(window_name)
                 break
             else:
@@ -257,7 +259,7 @@ class FrameProcessor(Thread):
                     'timestamp': utils.local_timestamp(),
                     'readings': reads
                 }
-                # async_ingest.ingest_callback(c_callback, c_ingest_ref, data)
+                async_ingest.ingest_callback(c_callback, c_ingest_ref, data)
 
                 # show the frame on the window
                 try:

@@ -254,7 +254,7 @@ def plugin_shutdown(handle):
     """
     global frame_processor, loop, async_thread, enable_web_streaming, web_stream
     try:
-        #
+
         frame_processor.shutdown_in_progress = True
         # allow the stream to stop
         time.sleep(3)
