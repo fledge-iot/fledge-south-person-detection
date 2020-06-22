@@ -49,6 +49,7 @@ def check_background():
     else:
         return False
 
+
 _DEFAULT_CONFIG = {
     'plugin': {
         'description': 'Person Detection On Fledge',
@@ -133,11 +134,9 @@ loop = None
 async_thread = None
 camera_processing_thread = None
 shutdown_in_progress = None
-inference = None
-asset_name = None
-enable_window = True
 enable_web_streaming = True
 FRAME = None
+BACKGROUND_TASK = False
 web_streaming_port_no = None
 
 
@@ -187,6 +186,7 @@ def wait_for_frame(stream):
             return
         else:
             time.sleep(0.2)
+
 
 async def mjpeg_handler(request):
     """    Keeps a watch on a global variable FRAME , encodes FRAME into jpeg and returns a response suitable
@@ -268,12 +268,8 @@ def construct_readings(objs):
         reads['person_' + str(r_index + 1) + '_' + 'y2'] = objs[r_index]['bounding_box'][3]
 
     reads['count'] = len(objs)
-    data = {
-        'asset': asset_name,
-        'timestamp': utils.local_timestamp(),
-        'readings': reads
-    }
-    return data
+
+    return reads
 
 
 def camera_loop(**kwargs):
@@ -299,16 +295,36 @@ def camera_loop(**kwargs):
     # the width of the detection window on which frames are to be displayed
     camera_width = kwargs['camera_width']
 
-    # Note : The object contents may change if plugin_reconfigure is called 
-    # thats why the inference object in the loop is global
+    handle = kwargs['handle']
+    model = handle['model_file']['value']
+    labels = handle['labels_file']['value']
+    global asset_name
+    asset_name = handle['asset_name']['value']
+    enable_tpu = handle['enable_edge_tpu']['value']
+    min_conf_threshold = float(handle['min_conf_threshold']['value'])
+
+    model = os.path.join(os.path.dirname(__file__), "model", model)
+    labels = os.path.join(os.path.dirname(__file__), "model", labels)
+
+    with open(labels, 'r') as f:
+        pairs = (l.strip().split(maxsplit=1) for l in f.readlines())
+        labels = dict((int(k), v) for k, v in pairs)
+
+    # instance of the inference class
+    inference = Inference()
+    _ = inference.get_interpreter(model, enable_tpu,
+                                            labels, min_conf_threshold)
 
     # these variables are used for calculation of frame per seconds (FPS)
     frame_rate_calc = 1
     freq = cv2.getTickFrequency()
 
-    source = kwargs['source']
+    source = int(handle['camera_id']['value'])
 
-    enable_window_local = kwargs['enable_window']
+    if handle['enable_window']['value'] == 'true':
+        enable_window = True
+    else:
+        enable_window = False
 
     # Initialize the stream object and start the thread that keeps on reading frames
     # This thread is independent of the Camera Processing Thread
@@ -322,16 +338,16 @@ def camera_loop(**kwargs):
     # creating a window with a name
     window_name = 'Human detector'
     global BACKGROUND_TASK
-    if not BACKGROUND_TASK and enable_window_local:
+    if not BACKGROUND_TASK and enable_window:
         foreground_task = True
-        cv2.namedWindow(window_name)
+        # cv2.namedWindow(window_name)
     else:
         foreground_task = False
    
     while True:
         # Capture frame-by-frame
         t1 = cv2.getTickCount()
-        global inference, asset_name, FRAME, enable_window
+        global FRAME
 
         # we need the height , width to resize the image for feeding into the model
         height_for_model = inference.height_for_model
@@ -441,22 +457,28 @@ def camera_loop(**kwargs):
         if shutdown_in_progress:
             videostream.stop()
             time.sleep(3)
-            cv2.destroyWindow(window_name)
+            # cv2.destroyWindow(window_name)
             break
         else:
             # Calculate framerate
             t_end = cv2.getTickCount()
             time1 = (t_end-t1)/freq
-            frame_rate_calc = 1/time1   
+            frame_rate_calc = 1/time1
 
-            data = construct_readings(objs)
+            reads = construct_readings(objs)
+            data = {
+                'asset': asset_name,
+                'timestamp': utils.local_timestamp(),
+                'readings': reads
+            }
             if not shutdown_in_progress:
                 async_ingest.ingest_callback(c_callback, c_ingest_ref, data)
 
             # show the frame on the window
             try:
                 if foreground_task and enable_window:
-                    cv2.imshow(window_name, frame)
+                    # cv2.imshow(window_name, frame)
+                    pass
                 FRAME = frame.copy()
             except Exception as e:
                 _LOGGER.info('exception  {}'.format(e))
@@ -503,28 +525,8 @@ def plugin_start(handle):
 
     loop = asyncio.new_event_loop()
     try:
-        model = handle['model_file']['value']
-        labels = handle['labels_file']['value']
-        global asset_name
-        asset_name = handle['asset_name']['value']
-        enable_tpu = handle['enable_edge_tpu']['value']
-        min_conf_threshold = float(handle['min_conf_threshold']['value'])
 
-        model = os.path.join(os.path.dirname(__file__), "model", model)
-        labels = os.path.join(os.path.dirname(__file__), "model", labels)
-
-        with open(labels, 'r') as f:
-            pairs = (l.strip().split(maxsplit=1) for l in f.readlines())
-            labels = dict((int(k), v) for k, v in pairs)
-
-        # instance of the inference class 
-        global inference, enable_window, enable_web_streaming, web_streaming_port_no
-        inference = Inference()
-        interpreter = inference.get_interpreter(model, enable_tpu, 
-                                                labels, min_conf_threshold)
-        
         # some extra config parameters required for the camera_loop function
-
         # Since pixel value can be from 0 to 255 , so we are considering mean to
         # be (0+255)/2 = 127.5 .
         input_mean = 127.5
@@ -534,25 +536,17 @@ def plugin_start(handle):
         
         web_streaming_port_no = int(handle['web_streaming_port_no']['value'])
 
-        if handle['enable_window']['value'] == 'true':
-            enable_window = True
-        else:
-            enable_window = False
-
         if handle['enable_web_streaming']['value'] == 'true':
             enable_web_streaming = True
         else:
             enable_web_streaming = False
-
-        source = int(handle['camera_id']['value'])
 
         config_dict = {
             'input_mean': input_mean,
             'input_std': input_std,
             'camera_height': camera_height,
             'camera_width': camera_width,
-            'source': source,
-            'enable_window': enable_window
+            'handle': handle
         }
 
         def run():
@@ -618,20 +612,36 @@ def plugin_shutdown(handle):
     Raises:
         None
     """
-    global camera_processing_thread, shutdown_in_progress, loop, async_thread
+    global camera_processing_thread, shutdown_in_progress, loop, async_thread, enable_web_streaming
     try:
         shutdown_in_progress = True
+        #
+        try:
+            app = handle["ws_app"]
+            server = handle["ws_server"]
+            handler = handle["ws_handler"]
+            if server:
+                server.close()
+                asyncio.ensure_future(server.wait_closed(), loop=loop)
+            asyncio.ensure_future(app.shutdown(), loop=loop)
+            asyncio.ensure_future(handler.shutdown(2.0), loop=loop)
+            asyncio.ensure_future(app.cleanup(), loop=loop)
+        except asyncio.CancelledError:
+            pass
+        except KeyError:
+            pass  # We may want to check if enable web streaming is set?!
         # allow the stream to stop
-        time.sleep(2)
-        
-        # stopping  every other thread one by one
+        time.sleep(3)
+        # stopping every other thread one by one
+        camera_processing_thread.join()
         camera_processing_thread = None
         loop.stop()
         async_thread = None
         loop = None
         _LOGGER.info('Plugin has shutdown')
-    except Exception as e:
-        _LOGGER.exception(str(e))
+
+    except Exception as ex:
+        _LOGGER.exception(str(ex))
         raise
 
 
