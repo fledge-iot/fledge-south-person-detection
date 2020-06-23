@@ -1,27 +1,8 @@
 import asyncio
-import copy
-import uuid
 import logging
-import os
-import time
-import subprocess
-
-import threading
-from threading import Thread
 from aiohttp import web, MultipartWriter
-
-
 import cv2
-import numpy as np
-
 from fledge.common import logger
-from fledge.plugins.common import utils
-import async_ingest
-
-from fledge.plugins.south.person_detection.videostream import VideoStream
-from fledge.plugins.south.person_detection.inference import Inference
-
-
 _LOGGER = logger.setup(__name__, level=logging.INFO)
 
 
@@ -78,12 +59,12 @@ class WebStream:
 
     def stop_server(self, loop):
         try:
-            if self.server:
-                self.server.close()
-                asyncio.ensure_future(self.server.wait_closed(), loop=loop)
-            asyncio.ensure_future(self.app.shutdown(), loop=loop)
-            asyncio.ensure_future(self.handler.shutdown(2.0), loop=loop)
-            asyncio.ensure_future(self.app.cleanup(), loop=loop)
+            if self.ws_server:
+                self.ws_server.close()
+                asyncio.ensure_future(self.ws_server.wait_closed(), loop=loop)
+            asyncio.ensure_future(self.ws_app.shutdown(), loop=loop)
+            asyncio.ensure_future(self.ws_handler.shutdown(2.0), loop=loop)
+            asyncio.ensure_future(self.ws_app.cleanup(), loop=loop)
         except asyncio.CancelledError:
             pass
         except KeyError:
@@ -120,5 +101,6 @@ class WebStream:
             self.ws_server = f.result()
 
         f.add_done_callback(f_callback)
+        return self
 
 
