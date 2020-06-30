@@ -19,7 +19,7 @@ class WebStream:
 
     @staticmethod
     async def mjpeg_handler(request):
-        """    Keeps a watch on a global variable FRAME , encodes FRAME into jpeg and returns a response suitable
+        """    Keeps a watch on a class variable FRAME , encodes FRAME into jpeg and returns a response suitable
                for viewing in a browser.
                 Args:
                        request -> a http request
@@ -58,6 +58,13 @@ class WebStream:
         return response
 
     def stop_server(self, loop):
+        """
+                Stops the web stream server (called on plugin shutdown)
+                Args:
+                       loop-> a asyncio loop
+                Returns: None
+               Raises: None
+        """
         try:
             if self.ws_server:
                 self.ws_server.close()
@@ -78,10 +85,9 @@ class WebStream:
         """ Starts a server to display detection results in a browser.
                 Args:
                        local_loop-> An asyncio main loop for server.
-                       address -> ip address where server to be started. Only localhost is used , so '0.0.0.0'  is used.
-                       port -> The port where the server application should run. It is configurable.
+
                 Returns:
-                    aiohttp web app instance, handler and future task
+                    self
                Raises: None
         """
 

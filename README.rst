@@ -32,6 +32,16 @@ Minimum Confidence Threshold :
         The detection results from the model will be filtered out, if the score is
         below this value.
 
+Enable detection Window:
+        Wether to show the detected results on a window or not.
+
+Enable Streaming:
+        Wether to stream the detected results in a browser or not.
+
+Web Stream Port:
+        Port number where web stream server should run.
+
+
 
 -----------------------------
 Instructions For Installation

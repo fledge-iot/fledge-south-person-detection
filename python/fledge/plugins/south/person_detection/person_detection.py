@@ -359,7 +359,7 @@ class FrameProcessor(Thread):
     def wait_for_frame(self):
         """ Waits for frame to become available else sleeps for 200 milliseconds.
                 Args:
-                       x -> a videostream object
+                       self-> a videostream object
                 Returns: None
                Raises: None
            """
