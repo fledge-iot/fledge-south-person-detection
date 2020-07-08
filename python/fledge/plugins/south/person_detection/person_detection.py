@@ -61,14 +61,14 @@ _DEFAULT_CONFIG = {
         'type': 'string',
         'default': 'detect_edgetpu.tflite',
         'order': '1',
-        'displayName': 'TFlite model file'
+        'displayName': 'TFlite Model File'
     },
     'labels_file': {
         'description': 'Labels file used during inference',
         'type': 'string',
         'default': 'coco_labels.txt',
         'order': '2',
-        'displayName': 'Labels file'
+        'displayName': 'Labels File'
     },
     'asset_name': {
         'description': 'Asset name',
