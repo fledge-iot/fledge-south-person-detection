@@ -59,28 +59,28 @@ _DEFAULT_CONFIG = {
     'model_file': {
         'description': 'TFlite model file to use for inference',
         'type': 'string',
-        'default': 'detect.tflite',
+        'default': 'detect_edgetpu.tflite',
         'order': '1',
-        'displayName': 'TFlite model file'
+        'displayName': 'TFlite Model File'
     },
     'labels_file': {
         'description': 'Labels file used during inference',
         'type': 'string',
         'default': 'coco_labels.txt',
         'order': '2',
-        'displayName': 'Labels file'
+        'displayName': 'Labels File'
     },
     'asset_name': {
-        'description': 'Asset Name',
+        'description': 'Asset name',
         'type': 'string',
-        'default': 'Detection Results',
+        'default': 'person_detection',
         'order': '3',
         'displayName': 'Asset Name'
     },
     'enable_edge_tpu': {
-        'description': 'Connect the Coral Edge TPU and enable this',
+        'description': 'Connect the Coral Edge TPU and ensure this is enabled in order to use Edge TPU',
         'type': 'boolean',
-        'default': 'false',
+        'default': 'true',
         'order': '4',
         'displayName': 'Enable Edge TPU'
     },
@@ -94,7 +94,7 @@ _DEFAULT_CONFIG = {
         'displayName': 'Minimum Confidence Threshold'
     },
     'camera_id': {
-        'description': 'The number associated  with your video device. See /dev in your '
+        'description': 'The number associated with your video device. See /dev in your '
                        'filesystem you will see video0 or video1',
         'type': 'integer',
         'default': '0',
@@ -102,14 +102,14 @@ _DEFAULT_CONFIG = {
         'displayName': 'Camera ID'
     },
     'enable_window': {
-        'description': 'Show detection results in a window default :False',
+        'description': 'Show detection results in a window',
         'type': 'boolean',
         'default': 'false',
         'order': '7',
-        'displayName': 'Enable Detection  Window'
+        'displayName': 'Enable Detection Window'
     },
     'enable_web_streaming': {
-        'description': 'Enable Web Streaming default :True',
+        'description': 'Enable web streaming on specified web streaming port',
         'type': 'boolean',
         'default': 'true',
         'order': '8',
@@ -120,7 +120,7 @@ _DEFAULT_CONFIG = {
         'type': 'string',
         'default': '8085',
         'order': '9',
-        'displayName': 'Web streaming Port number',
+        'displayName': 'Web Streaming Port',
         "validity": "enable_web_streaming == \"true\" "
     },
 }
