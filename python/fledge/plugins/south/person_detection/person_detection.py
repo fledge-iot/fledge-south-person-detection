@@ -43,7 +43,7 @@ _DEFAULT_CONFIG = {
     'model_file': {
         'description': 'TFlite model file to use for inference',
         'type': 'string',
-        'default': 'detect.tflite',
+        'default': 'detect_edgetpu.tflite',
         'order': '1',
         'displayName': 'TFlite model file'
     },
@@ -57,14 +57,14 @@ _DEFAULT_CONFIG = {
     'asset_name': {
         'description': 'Asset Name',
         'type': 'string',
-        'default': 'Detection Results',
+        'default': 'person_detection',
         'order': '3',
         'displayName': 'Asset Name'
     },
     'enable_edge_tpu': {
         'description': 'Connect the Coral Edge TPU and enable this',
         'type': 'boolean',
-        'default': 'false',
+        'default': 'true',
         'order': '4',
         'displayName': 'Enable Edge TPU'
     },

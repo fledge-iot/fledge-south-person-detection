@@ -33,10 +33,10 @@ Minimum Confidence Threshold :
         below this value.
 
 Enable detection Window:
-        Wether to show the detected results on a window or not.
+        Whether to show the detected results on a window or not.
 
 Enable Streaming:
-        Wether to stream the detected results in a browser or not.
+        Whether to stream the detected results in a browser or not.
 
 Web Stream Port:
         Port number where web stream server should run.
