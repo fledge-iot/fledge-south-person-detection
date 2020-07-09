@@ -15,7 +15,7 @@
 #    limitations under the License.
 
 ##
-## Author: Amandeep Singh Arora , Deepanshu Yadav
+## Author: Amandeep Singh Arora, Deepanshu Yadav
 ##
 
 # The Rpi -4 requirements are from https://pimylifeup.com/raspberry-pi-opencv/

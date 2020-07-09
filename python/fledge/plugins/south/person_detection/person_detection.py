@@ -1,28 +1,40 @@
-
+# -*- coding: utf-8 -*-
 
 # FLEDGE_BEGIN
 # See: http://fledge.readthedocs.io/
 # FLEDGE_END
 
-""" Human Detector  async plugin for any platform """
-import copy
+""" Human Detector Plugin
+"""
+__author__ = "Amandeep Singh Arora, Deepanshu Yadav"
+__copyright__ = "Copyright (c) 2020 Dianomic Systems Inc."
+__license__ = "Apache 2.0"
+__version__ = "${VERSION}"
+
 import asyncio
+import copy
 import uuid
 import logging
 import os
-import numpy as np
+import time
+import subprocess
+
+import threading
 from threading import Thread
+from aiohttp import web, MultipartWriter
+
+
+import cv2
+import numpy as np
+
 from fledge.common import logger
 from fledge.plugins.common import utils
 import async_ingest
-import cv2
-import time
-import subprocess
+
 from fledge.plugins.south.person_detection.videostream import VideoStream
 from fledge.plugins.south.person_detection.inference import Inference
-import asyncio
-from aiohttp import web, MultipartWriter
-import  threading
+
+
 _LOGGER = logger.setup(__name__, level=logging.INFO)
 BACKGROUND_TASK = False
 
@@ -37,11 +49,6 @@ def check_background():
     else:
         return False
 
-
-__author__ = "Amandeep Singh Arora, Deepanshu Yadav"
-__copyright__ = "Copyright (c) 2020 Dianomic Systems Inc."
-__license__ = "Apache 2.0"
-__version__ = "${VERSION}"
 _DEFAULT_CONFIG = {
     'plugin': {
         'description': 'Person Detection On Fledge',
@@ -52,28 +59,28 @@ _DEFAULT_CONFIG = {
     'model_file': {
         'description': 'TFlite model file to use for inference',
         'type': 'string',
-        'default': 'detect.tflite',
+        'default': 'detect_edgetpu.tflite',
         'order': '1',
-        'displayName': 'TFlite model file'
+        'displayName': 'TFlite Model File'
     },
     'labels_file': {
         'description': 'Labels file used during inference',
         'type': 'string',
         'default': 'coco_labels.txt',
         'order': '2',
-        'displayName': 'Labels file'
+        'displayName': 'Labels File'
     },
     'asset_name': {
-        'description': 'Asset Name',
+        'description': 'Asset name',
         'type': 'string',
-        'default': 'Detection Results',
+        'default': 'person_detection',
         'order': '3',
         'displayName': 'Asset Name'
     },
     'enable_edge_tpu': {
-        'description': 'Connect the Coral Edge TPU and enable this',
+        'description': 'Connect the Coral Edge TPU and ensure this is enabled in order to use Edge TPU',
         'type': 'boolean',
-        'default': 'false',
+        'default': 'true',
         'order': '4',
         'displayName': 'Enable Edge TPU'
     },
@@ -87,7 +94,7 @@ _DEFAULT_CONFIG = {
         'displayName': 'Minimum Confidence Threshold'
     },
     'camera_id': {
-        'description': 'The number associated  with your video device. See /dev in your '
+        'description': 'The number associated with your video device. See /dev in your '
                        'filesystem you will see video0 or video1',
         'type': 'integer',
         'default': '0',
@@ -95,14 +102,14 @@ _DEFAULT_CONFIG = {
         'displayName': 'Camera ID'
     },
     'enable_window': {
-        'description': 'Show detection results in a window default :False',
+        'description': 'Show detection results in a window',
         'type': 'boolean',
         'default': 'false',
         'order': '7',
-        'displayName': 'Enable Detection  Window'
+        'displayName': 'Enable Detection Window'
     },
     'enable_web_streaming': {
-        'description': 'Enable Web Streaming default :True',
+        'description': 'Enable web streaming on specified web streaming port',
         'type': 'boolean',
         'default': 'true',
         'order': '8',
@@ -113,7 +120,7 @@ _DEFAULT_CONFIG = {
         'type': 'string',
         'default': '8085',
         'order': '9',
-        'displayName': 'Web streaming Port number',
+        'displayName': 'Web Streaming Port',
         "validity": "enable_web_streaming == \"true\" "
     },
 }
@@ -144,7 +151,7 @@ def plugin_info():
 
     return {
         'name': 'Person Detection plugin',
-        'version': '1.8.0',
+        'version': '1.8.1',
         'mode': 'async',
         'type': 'south',
         'interface': '1.0',
@@ -181,19 +188,6 @@ def wait_for_frame(stream):
         else:
             time.sleep(0.2)
 
-
-def round_to_three_decimal_places(x):
-    """ Rounds off a floating number to three decimal places
-         Args: 
-                x -> a floating number 
-         Returns:
-                returns a floating point number rounded off to three decimal places
-        Raises: None
-    """
-
-    return round(x, 3)
-
-
 async def mjpeg_handler(request):
     """    Keeps a watch on a global variable FRAME , encodes FRAME into jpeg and returns a response suitable
            for viewing in a browser.
@@ -214,7 +208,6 @@ async def mjpeg_handler(request):
     encode_param = (int(cv2.IMWRITE_JPEG_QUALITY), 90)
 
     while True:
-
         if shutdown_in_progress:
             break
         if FRAME is None:
@@ -355,7 +348,6 @@ def camera_loop(**kwargs):
 
         # Taking the frame the stream  
         frame1 = videostream.read()
-
         frame = frame1.copy()
 
         # BGR to RGB 
@@ -395,10 +387,10 @@ def camera_loop(**kwargs):
                 # Interpreter can return coordinates that are outside of image dimensions, 
                 # need to force them to be within image using max() and min()
 
-                ymin_model = round_to_three_decimal_places(boxes[i][0])
-                xmin_model = round_to_three_decimal_places(boxes[i][1])
-                ymax_model = round_to_three_decimal_places(boxes[i][2])
-                xmax_model = round_to_three_decimal_places(boxes[i][3])
+                ymin_model = round(boxes[i][0], 3)
+                xmin_model = round(boxes[i][1], 3)
+                ymax_model = round(boxes[i][2], 3)
+                xmax_model = round(boxes[i][3], 3)
 
                 # map the bounding boxes from model to the window 
                 ymin = int(max(1, (ymin_model * camera_width)))
@@ -452,7 +444,6 @@ def camera_loop(**kwargs):
             cv2.destroyWindow(window_name)
             break
         else:
-
             # Calculate framerate
             t_end = cv2.getTickCount()
             time1 = (t_end-t1)/freq
@@ -485,15 +476,17 @@ def start_web_streaming_server(local_loop, address, port):
                    address -> ip address where server to be started. Only localhost is used , so '0.0.0.0'  is used.
                    port -> The port where the server application should run. It is configurable.
             Returns:
-                None
+                aiohttp web app instance, handler and future task
            Raises: None
     """
 
     app = web.Application(loop=local_loop)
     app.router.add_route('GET', "/", index)
     app.router.add_route('GET', "/image", mjpeg_handler)
-    coro_server = local_loop.create_server(app.make_handler(loop=local_loop), address, port)
-    asyncio.ensure_future(coro_server, loop=local_loop)
+    handler = app.make_handler(loop=local_loop)
+    coro_server = local_loop.create_server(handler, address, port)
+    f = asyncio.ensure_future(coro_server, loop=local_loop)
+    return app, handler, f
 
 
 def plugin_start(handle):
@@ -567,7 +560,17 @@ def plugin_start(handle):
             loop.run_forever()
 
         if enable_web_streaming:
-            start_web_streaming_server(loop, address='0.0.0.0', port=web_streaming_port_no)
+            app, handler, _f = start_web_streaming_server(loop, address='0.0.0.0', port=web_streaming_port_no)
+            handle["ws_app"] = app
+            handle["ws_handler"] = handler
+            handle["ws_server"] = None
+
+            def f_callback(f):
+                _LOGGER.info(repr(f.result()))
+                handle["ws_server"] = f.result()
+
+            _f.add_done_callback(f_callback)
+
             async_thread = Thread(target=run, name="Async Thread")
             async_thread.daemon = True
             async_thread.start()
@@ -576,13 +579,13 @@ def plugin_start(handle):
                                           name='Camera Processing Thread',
                                           kwargs=config_dict)
 
-        # Resolves segmentation fault  when fledge service shutdown
         camera_processing_thread.daemon = True
         camera_processing_thread.start()
-
-    except Exception as exptn:
-        _LOGGER.exception("Human detector plugin  failed to start. Details: %s", str(exptn))
+    except Exception as ex:
+        _LOGGER.exception("Human detector plugin failed to start. Details: %s", str(ex))
         raise
+    else:
+        _LOGGER.info("Plugin started")
 
 
 def plugin_reconfigure(handle, new_config):
@@ -597,23 +600,9 @@ def plugin_reconfigure(handle, new_config):
     Raises:
     """
     
+    plugin_shutdown(handle)
     new_handle = plugin_init(new_config)
-
-    model = new_handle['model_file']['value']
-    model = os.path.join(os.path.dirname(__file__), "model", model)
-
-    labels = new_handle['labels_file']['value']
-    labels = os.path.join(os.path.dirname(__file__), "model", labels)
-    with open(labels, 'r') as f:
-        pairs = (l.strip().split(maxsplit=1) for l in f.readlines())
-        labels = dict((int(k), v) for k, v in pairs)
-
-    enable_tpu = new_handle['enable_edge_tpu']['value']
-    min_conf_threshold = float(new_handle['min_conf_threshold']['value'])
-
-    global inference, asset_name
-    asset_name = new_handle['asset_name']['value']
-    _ = inference.get_interpreter(model, enable_tpu, labels, min_conf_threshold)
+    plugin_start(new_handle)
 
     return new_handle
 
@@ -641,7 +630,6 @@ def plugin_shutdown(handle):
         async_thread = None
         loop = None
         _LOGGER.info('Plugin has shutdown')
-
     except Exception as e:
         _LOGGER.exception(str(e))
         raise
@@ -658,5 +646,3 @@ def plugin_register_ingest(handle, callback, ingest_ref):
     global c_callback, c_ingest_ref
     c_callback = callback
     c_ingest_ref = ingest_ref
-
-
