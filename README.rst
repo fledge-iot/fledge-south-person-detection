@@ -101,17 +101,17 @@ FAQs
 
     VboxManage controlvm "new_ubuntu" webcam attach .1
 
-2. How many models are currently supported ?
-    a. mobilenet_ssd_v1_coco_quant_postprocess_edgetpu.tflite (with edge tpu model), coco_labels.txt (labels_file)
-    b. mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite (with edge tpu model), coco_labels.txt (labels_file)
-    c. mobilenet_ssd_v2_face_quant_postprocess_edgetpu.tflite (with edge tpu model), coco_labels.txt (labels_file)
-    d. mobilenet_ssd_v1_coco_quant_postprocess.tflite (without edge tpu model), coco_labels.txt (labels_file)
-    e. mobilenet_ssd_v2_coco_quant_postprocess.tflite (without edge tpu  model), coco_labels.txt (labels_file)
-    f. mobilenet_ssd_v2_face_quant_postprocess.tflite (without edge tpu model), coco_labels.txt (labels_file)
+2. How many models are currently supported?
+    a. mobilenet_ssd_v1_coco_quant_postprocess_edgetpu.tflite (with Edge TPU), coco_labels.txt (labels_file)
+    b. mobilenet_ssd_v2_coco_quant_postprocess_edgetpu.tflite (with Edge TPU), coco_labels.txt (labels_file)
+    c. mobilenet_ssd_v2_face_quant_postprocess_edgetpu.tflite (with Edge TPU), coco_labels.txt (labels_file)
+    d. mobilenet_ssd_v1_coco_quant_postprocess.tflite (without Edge TPU), coco_labels.txt (labels_file)
+    e. mobilenet_ssd_v2_coco_quant_postprocess.tflite (without Edge TPU), coco_labels.txt (labels_file)
+    f. mobilenet_ssd_v2_face_quant_postprocess.tflite (without Edge TPU), coco_labels.txt (labels_file)
 
     Download them from here https://github.com/google-coral/examples-camera/blob/master/download_models.sh
 
-3. Which cameras are supported ?
+3. Which cameras are supported?
     a. Coral Camera
-    b. USB camera with MJPG format.
+    b. USB camera supporting MJPG format.
     c. Raspberry pi camera.
