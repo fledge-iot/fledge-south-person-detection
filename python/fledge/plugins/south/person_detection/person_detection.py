@@ -62,7 +62,7 @@ _DEFAULT_CONFIG = {
         'displayName': 'Asset Name'
     },
     'enable_edge_tpu': {
-        'description': 'Connect the Coral Edge TPU and ensure this is enabled in order to use Edge TPU',
+        'description': 'Connect Coral Edge TPU and select this option to use TPU for inference',
         'type': 'boolean',
         'default': 'true',
         'order': '4',
@@ -79,7 +79,7 @@ _DEFAULT_CONFIG = {
     },
     'camera_id': {
         'description': 'The number associated with your video device. See /dev in your '
-                       'filesystem you will see video0 or video1',
+                       'filesystem. Enter 0 to use /dev/video0, and so on.',
         'type': 'integer',
         'default': '0',
         'order': '6',
