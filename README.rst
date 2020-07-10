@@ -2,7 +2,8 @@
 Fledge South Person detection
 ******************************
 
-This directory contains a South service plugin that detects person in the live video stream
+
+This directory contains a South service plugin that a detects person in the live video stream 
 and generates reading object with type of object (in this case it is  person), bounding box cordinates and confidence score.
 The plugins also draws the bounding box on the detection window, and also displays confidence scores, 
 FPS (Frames Per Second) & type of object detected (Person). 
