@@ -56,6 +56,9 @@ class VideoStream:
         elif detectCoralDevBoard():
             self.stream = cv2.VideoCapture(source)
 
+        if self.stream is None:
+            _LOGGER.exception("Either the ID of video device is wrong or the device is not supported")
+
         self.enable_thread = enable_thread
         if self.enable_thread:
             # Read first frame from the stream
