@@ -32,7 +32,6 @@ from fledge.plugins.south.person_detection.web_stream import WebStream
 
 _LOGGER = logger.setup(__name__, level=logging.INFO)
 
-
 _DEFAULT_CONFIG = {
     'plugin': {
         'description': 'Person Detection On Fledge',
@@ -108,7 +107,6 @@ _DEFAULT_CONFIG = {
         "validity": "enable_web_streaming == \"true\" "
     },
 }
-
 
 # GLOBAL VARIABLES DECLARATION
 c_callback = None
@@ -212,7 +210,7 @@ def plugin_reconfigure(handle, new_config):
         new_handle: new handle to be used in the future calls
     Raises:
     """
-    
+
     plugin_shutdown(handle)
     new_handle = plugin_init(new_config)
     plugin_start(new_handle)
@@ -297,11 +295,11 @@ class FrameProcessor(Thread):
         # instance of the self.inference class
         self.inference = Inference()
         _ = self.inference.get_interpreter(model, enable_tpu,
-                                      labels, self.min_conf_threshold)
+                                           labels, self.min_conf_threshold)
 
         source = int(handle['camera_id']['value'])
 
-        if handle['enable_window']['value'] == 'true':
+        if handle['enable_window']['value'] == 'true' and not FrameProcessor.check_background():
             self.enable_window = True
         else:
             self.enable_window = False
@@ -313,6 +311,22 @@ class FrameProcessor(Thread):
         # videostream = VideoStream(resolution=(self.camera_width, self.camera_height),
         # source=source, enable_thread=True).start()
         self.shutdown_in_progress = False
+
+    @staticmethod
+    def check_background():
+        """
+        Checks for fledge running in background.
+        Returns: True if fledge is running in background.
+
+        """
+        out = subprocess.Popen(['systemctl', 'status', 'fledge'],
+                               stdout=subprocess.PIPE,
+                               stderr=subprocess.STDOUT)
+        stdout, stderr = out.communicate()
+        if str(stdout).find("active (running)") != -1:
+            return True
+        else:
+            return False
 
     @staticmethod
     def construct_readings(objs):
