@@ -128,7 +128,7 @@ def plugin_info():
 
     return {
         'name': 'Person Detection plugin',
-        'version': '1.8.1',
+        'version': '1.8.2',
         'mode': 'async',
         'type': 'south',
         'interface': '1.0',
