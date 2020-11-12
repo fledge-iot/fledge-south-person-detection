@@ -243,11 +243,21 @@ def plugin_reconfigure(handle, new_config):
         return new_handle
     
     else:
-        plugin_shutdown(handle)
-        new_handle = plugin_init(new_config)
-        plugin_start(new_handle)
 
-        return new_handle
+        was_native_window_enabled = handle['enable_window']['value'] == 'true'
+        is_native_window_enabled_now = new_config['enable_window']['value'] == 'true'
+
+        if was_native_window_enabled or is_native_window_enabled_now:
+            _LOGGER.warning("Enabling the native window during reconfigure is known to cause problems. "
+                            "Restart the plugin manually. ")
+            new_handle = plugin_init(new_config)
+            return new_handle
+
+        else:
+            plugin_shutdown(handle)
+            new_handle = plugin_init(new_config)
+            plugin_start(new_handle)
+            return new_handle
 
 
 def plugin_shutdown(handle):
