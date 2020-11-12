@@ -183,6 +183,10 @@ def plugin_start(handle):
             loop.run_forever()
 
         if enable_web_streaming:
+
+            # make shutdown flag of web stream server false.
+            WebStream.SHUTDOWN_IN_PROGRESS = False
+
             web_stream = WebStream(port=web_streaming_port_no).start_web_streaming_server(local_loop=loop)
             async_thread = Thread(target=run, name="Async Thread")
             async_thread.daemon = True
@@ -199,6 +203,25 @@ def plugin_start(handle):
         _LOGGER.info("Plugin started")
 
 
+def check_need_to_shutdown(handle, new_config):
+
+    old_camera_id = handle['camera_id']['value']
+    old_enable_window = handle['enable_window']['value']
+    old_enable_web_streaming = handle['enable_web_streaming']['value']
+    old_port_no = handle['web_streaming_port_no']['value']
+
+    new_camera_id = new_config['camera_id']['value']
+    new_enable_window = new_config['enable_window']['value']
+    new_enable_web_streaming = new_config['enable_web_streaming']['value']
+    new_port_no = new_config['web_streaming_port_no']['value']
+
+    if old_camera_id != new_camera_id or old_enable_window != new_enable_window or \
+       old_enable_web_streaming != new_enable_web_streaming or old_port_no != new_port_no:
+        return True
+    else:
+        return False
+
+
 def plugin_reconfigure(handle, new_config):
     """ Reconfigures the plugin
         it should be called when the configuration of the plugin is changed
@@ -210,12 +233,21 @@ def plugin_reconfigure(handle, new_config):
         new_handle: new handle to be used in the future calls
     Raises:
     """
+    global frame_processor
 
-    plugin_shutdown(handle)
-    new_handle = plugin_init(new_config)
-    plugin_start(new_handle)
+    need_to_shutdown = check_need_to_shutdown(handle, new_config)
+    if not need_to_shutdown:
+        _LOGGER.info("No need to shutdown")
+        frame_processor.handle_new_config(new_config)
+        new_handle = plugin_init(new_config)
+        return new_handle
+    
+    else:
+        plugin_shutdown(handle)
+        new_handle = plugin_init(new_config)
+        plugin_start(new_handle)
 
-    return new_handle
+        return new_handle
 
 
 def plugin_shutdown(handle):
@@ -242,6 +274,7 @@ def plugin_shutdown(handle):
             WebStream.SHUTDOWN_IN_PROGRESS = True
             web_stream.stop_server(loop)
         loop.stop()
+        # async_thread.join()
         async_thread = None
         loop = None
 
@@ -260,6 +293,7 @@ def plugin_register_ingest(handle, callback, ingest_ref):
         callback: C opaque object required to passed back to C/Python async ingest interface
         ingest_ref: C opaque object required to passed back to C/Python async ingest interface
     """
+    _LOGGER.info("register ingest")
     global c_callback, c_ingest_ref
     c_callback = callback
     c_ingest_ref = ingest_ref
@@ -383,6 +417,26 @@ class FrameProcessor(Thread):
             else:
                 time.sleep(0.2)
 
+    def handle_new_config(self, new_config):
+
+        _LOGGER.info("Handling the reconfigure without shutdown")
+        model = new_config['model_file']['value']
+        labels = new_config['labels_file']['value']
+        self.asset_name = new_config['asset_name']['value']
+        enable_tpu = new_config['enable_edge_tpu']['value']
+        self.min_conf_threshold = float(new_config['min_conf_threshold']['value'])
+
+        model = os.path.join(os.path.dirname(__file__), "model", model)
+        labels = os.path.join(os.path.dirname(__file__), "model", labels)
+
+        with open(labels, 'r') as f:
+            pairs = (l.strip().split(maxsplit=1) for l in f.readlines())
+            labels = dict((int(k), v) for k, v in pairs)
+
+        _ = self.inference.get_interpreter(model, enable_tpu,
+                                           labels, self.min_conf_threshold)
+        _LOGGER.info("Handled the reconfigure")
+
     def run(self):
         # these variables are used for calculation of frame per seconds (FPS)
         frame_rate_calc = 1
@@ -496,6 +550,7 @@ class FrameProcessor(Thread):
 
             # All the results have been drawn on the frame, so it's time to display it.
             if self.shutdown_in_progress:
+                _LOGGER.info("Shut down breaking loop")
                 break
             else:
                 # Calculate framerate
@@ -509,19 +564,27 @@ class FrameProcessor(Thread):
                     'timestamp': utils.local_timestamp(),
                     'readings': reads
                 }
+                # _LOGGER.info("normal ingested readings")
                 async_ingest.ingest_callback(c_callback, c_ingest_ref, data)
 
                 # show the frame on the window
                 try:
                     if self.enable_window:
                         cv2.imshow("Human Detector", frame)
+
                     WebStream.FRAME = frame.copy()
+
                 except Exception as e:
                     _LOGGER.info('exception  {}'.format(e))
 
                 # wait for 1 milli second
                 cv2.waitKey(1)
 
+        _LOGGER.info("Stopping the stream ")
         self.videostream.stop()
+        _LOGGER.info("Camera stream has been stopped")
         time.sleep(2)
         cv2.destroyAllWindows()
+        _LOGGER.info("All windows destroyed")
+        WebStream.SHUTDOWN_IN_PROGRESS = True
+        _LOGGER.info("Shutdown flag of streaming server set True")

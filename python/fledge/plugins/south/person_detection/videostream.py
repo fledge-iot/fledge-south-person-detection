@@ -55,6 +55,9 @@ class VideoStream:
             _ = self.stream.set(4, resolution[1])
         elif detectCoralDevBoard():
             self.stream = cv2.VideoCapture(source)
+        else:
+            # If the device is not supported self.stream would be None.
+            self.stream = cv2.VideoCapture(source)
 
         if self.stream is None:
             _LOGGER.exception("Either the ID of video device is wrong or the device is not supported")
