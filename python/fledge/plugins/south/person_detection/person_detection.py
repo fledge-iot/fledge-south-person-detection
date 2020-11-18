@@ -236,7 +236,7 @@ def plugin_reconfigure(handle, new_config):
     parameters_to_check = ['camera_id', 'enable_window', 'enable_web_streaming', 'web_streaming_port_no']
     need_to_shutdown = check_need_to_shutdown(handle, new_config, parameters_to_check)
     if not need_to_shutdown:
-        _LOGGER.info("No need to shutdown")
+        _LOGGER.debug("No need to shutdown")
         frame_processor.handle_new_config(new_config)
         new_handle = plugin_init(new_config)
         return new_handle
@@ -302,7 +302,7 @@ def plugin_register_ingest(handle, callback, ingest_ref):
         callback: C opaque object required to passed back to C/Python async ingest interface
         ingest_ref: C opaque object required to passed back to C/Python async ingest interface
     """
-    _LOGGER.info("register ingest")
+    _LOGGER.debug("register ingest")
     global c_callback, c_ingest_ref
     c_callback = callback
     c_ingest_ref = ingest_ref
@@ -428,7 +428,7 @@ class FrameProcessor(Thread):
 
     def handle_new_config(self, new_config):
 
-        _LOGGER.info("Handling the reconfigure without shutdown")
+        _LOGGER.debug("Handling the reconfigure without shutdown")
         model = new_config['model_file']['value']
         labels = new_config['labels_file']['value']
         self.asset_name = new_config['asset_name']['value']
@@ -444,7 +444,7 @@ class FrameProcessor(Thread):
 
         _ = self.inference.get_interpreter(model, enable_tpu,
                                            labels, self.min_conf_threshold)
-        _LOGGER.info("Handled the reconfigure")
+        _LOGGER.debug("Handled the reconfigure")
 
     def run(self):
         # these variables are used for calculation of frame per seconds (FPS)
@@ -559,7 +559,7 @@ class FrameProcessor(Thread):
 
             # All the results have been drawn on the frame, so it's time to display it.
             if self.shutdown_in_progress:
-                _LOGGER.info("Shut down breaking loop")
+                _LOGGER.debug("Shut down breaking loop")
                 break
             else:
                 # Calculate framerate
@@ -573,7 +573,7 @@ class FrameProcessor(Thread):
                     'timestamp': utils.local_timestamp(),
                     'readings': reads
                 }
-                # _LOGGER.info("normal ingested readings")
+
                 async_ingest.ingest_callback(c_callback, c_ingest_ref, data)
 
                 # show the frame on the window
@@ -589,11 +589,11 @@ class FrameProcessor(Thread):
                 # wait for 1 milli second
                 cv2.waitKey(1)
 
-        _LOGGER.info("Stopping the stream ")
+        _LOGGER.debug("Stopping the stream ")
         self.videostream.stop()
         _LOGGER.info("Camera stream has been stopped")
         time.sleep(2)
         cv2.destroyAllWindows()
-        _LOGGER.info("All windows destroyed")
+        _LOGGER.debug("All windows destroyed")
         WebStream.SHUTDOWN_IN_PROGRESS = True
-        _LOGGER.info("Shutdown flag of streaming server set True")
+        _LOGGER.debug("Shutdown flag of streaming server set True")
