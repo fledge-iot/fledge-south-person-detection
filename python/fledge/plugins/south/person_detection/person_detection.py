@@ -116,6 +116,11 @@ loop = None
 async_thread = None
 enable_web_streaming = None
 web_stream = None
+# Hard coding camera resolution for now. Can give it inside configuration. However changing
+# it is quite risky because some devices support changing camera resolution through opencv API
+# but others simply don't (Like the coral board).
+CAMERA_HEIGHT = 480
+CAMERA_WIDTH = 640
 
 
 def plugin_info():
@@ -168,8 +173,8 @@ def plugin_start(handle):
         # be (0+255)/2 = 127.5 .
         handle['input_mean'] = 127.5
         handle['input_std'] = 127.5
-        handle['camera_height'] = 640
-        handle['camera_width'] = 480
+        handle['camera_height'] = CAMERA_HEIGHT
+        handle['camera_width'] = CAMERA_WIDTH
 
         web_streaming_port_no = int(handle['web_streaming_port_no']['value'])
 
@@ -515,10 +520,10 @@ class FrameProcessor(Thread):
                     xmax_model = round(boxes[i][3], 3)
 
                     # map the bounding boxes from model to the window
-                    ymin = int(max(1, (ymin_model * self.camera_width)))
-                    xmin = int(max(1, (xmin_model * self.camera_height)))
-                    ymax = int(min(self.camera_width, (ymax_model * self.camera_width)))
-                    xmax = int(min(self.camera_height, (xmax_model * self.camera_height)))
+                    ymin = int(max(1, (ymin_model * self.camera_height)))
+                    xmin = int(max(1, (xmin_model * self.camera_width)))
+                    ymax = int(min(self.camera_height, (ymax_model * self.camera_height)))
+                    xmax = int(min(self.camera_width, (xmax_model * self.camera_width)))
 
                     # draw the rectangle on the frame
                     cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (10, 255, 0), 2)
