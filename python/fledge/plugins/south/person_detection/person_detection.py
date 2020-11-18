@@ -208,23 +208,16 @@ def plugin_start(handle):
         _LOGGER.info("Plugin started")
 
 
-def check_need_to_shutdown(handle, new_config):
+def check_need_to_shutdown(handle, new_config, parameters_to_check):
 
-    old_camera_id = handle['camera_id']['value']
-    old_enable_window = handle['enable_window']['value']
-    old_enable_web_streaming = handle['enable_web_streaming']['value']
-    old_port_no = handle['web_streaming_port_no']['value']
+    shutdown = False
+    for parameter in parameters_to_check:
+        old_value = handle[parameter]['value']
+        new_value = new_config[parameter]['value']
+        if new_value != old_value:
+            shutdown = True
 
-    new_camera_id = new_config['camera_id']['value']
-    new_enable_window = new_config['enable_window']['value']
-    new_enable_web_streaming = new_config['enable_web_streaming']['value']
-    new_port_no = new_config['web_streaming_port_no']['value']
-
-    if old_camera_id != new_camera_id or old_enable_window != new_enable_window or \
-       old_enable_web_streaming != new_enable_web_streaming or old_port_no != new_port_no:
-        return True
-    else:
-        return False
+    return shutdown
 
 
 def plugin_reconfigure(handle, new_config):
@@ -240,7 +233,8 @@ def plugin_reconfigure(handle, new_config):
     """
     global frame_processor
 
-    need_to_shutdown = check_need_to_shutdown(handle, new_config)
+    parameters_to_check = ['camera_id', 'enable_window', 'enable_web_streaming', 'web_streaming_port_no']
+    need_to_shutdown = check_need_to_shutdown(handle, new_config, parameters_to_check)
     if not need_to_shutdown:
         _LOGGER.info("No need to shutdown")
         frame_processor.handle_new_config(new_config)
