@@ -116,7 +116,7 @@ loop = None
 async_thread = None
 enable_web_streaming = None
 web_stream = None
-# Hard coding camera resolution for now. Can give it inside configuration. However changing
+# Keeping a fixed camera resolution for now. Can give it inside configuration. However changing
 # it is quite risky because some devices support changing camera resolution through opencv API
 # but others simply don't (Like the coral board).
 CAMERA_HEIGHT = 480
