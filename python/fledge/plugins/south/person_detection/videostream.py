@@ -55,8 +55,11 @@ class VideoStream:
             _ = self.stream.set(4, resolution[1])
         elif detectCoralDevBoard():
             self.stream = cv2.VideoCapture(source)
+            # cannot change camera resolution on coral device through opencv API.
         else:
             # If the device is not supported self.stream would be None.
+            # There could be another format such as YUYV which may support changing camera resolution
+            # through Open CV API. Omitting these calls for now.
             self.stream = cv2.VideoCapture(source)
 
         if self.stream is None:

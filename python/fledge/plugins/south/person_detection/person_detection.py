@@ -209,15 +209,24 @@ def plugin_start(handle):
 
 
 def check_need_to_shutdown(handle, new_config, parameters_to_check):
+    """
+    Checks whether shutdown is required if we change configuration.
+    Args:
+        handle: Old configuration
+        new_config: New Configuration
+        parameters_to_check: Parameters (list) whose value if changed then shutdown is required
 
-    shutdown = False
+    Returns:
+        True or False
+    """
+    need_to_shutdown = False
     for parameter in parameters_to_check:
         old_value = handle[parameter]['value']
         new_value = new_config[parameter]['value']
         if new_value != old_value:
-            shutdown = True
+            need_to_shutdown = True
 
-    return shutdown
+    return need_to_shutdown
 
 
 def plugin_reconfigure(handle, new_config):
@@ -427,6 +436,14 @@ class FrameProcessor(Thread):
                 time.sleep(0.2)
 
     def handle_new_config(self, new_config):
+        """
+        If shutdown is not required then it changes the configuration on the fly.
+        Args:
+            new_config: The configuration during reconfigure.
+
+        Returns:
+              None
+        """
 
         _LOGGER.debug("Handling the reconfigure without shutdown")
         model = new_config['model_file']['value']
