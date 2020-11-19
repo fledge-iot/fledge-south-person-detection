@@ -187,19 +187,23 @@ def plugin_start(handle):
             global loop
             loop.run_forever()
 
-        if enable_web_streaming:
-
-            # make shutdown flag of web stream server false.
-            WebStream.SHUTDOWN_IN_PROGRESS = False
-
-            web_stream = WebStream(port=web_streaming_port_no).start_web_streaming_server(local_loop=loop)
-            async_thread = Thread(target=run, name="Async Thread")
-            async_thread.daemon = True
-            async_thread.start()
-
         global frame_processor
         frame_processor = FrameProcessor(handle)
-        frame_processor.start()
+        if frame_processor.is_camera_functional:
+
+            if enable_web_streaming:
+
+                # make shutdown flag of web stream server false.
+                WebStream.SHUTDOWN_IN_PROGRESS = False
+
+                web_stream = WebStream(port=web_streaming_port_no).start_web_streaming_server(local_loop=loop)
+                async_thread = Thread(target=run, name="Async Thread")
+                async_thread.daemon = True
+                async_thread.start()
+
+            frame_processor.start()
+        else:
+            raise Exception("Camera is not functional. Please shutdown and try again. ")
 
     except Exception as ex:
         _LOGGER.exception("Human detector plugin failed to start. Details: %s", str(ex))
@@ -254,6 +258,16 @@ def plugin_reconfigure(handle, new_config):
 
         was_native_window_enabled = handle['enable_window']['value'] == 'true'
         is_native_window_enabled_now = new_config['enable_window']['value'] == 'true'
+
+        # case  was_native_window_enabled  is_native_window_enabled_now
+        # 1.          True                       True
+        # 2.          True                       False
+        # 3.          False                      True
+        # 4.          False                      False
+
+        # Only case 4. should be allowed and rest of the cases are causing problems.
+        # Refer to the following link for more details
+        # https://stackoverflow.com/questions/60737852/opencv-imshow-hangs-if-called-two-times-from-a-thread
 
         if was_native_window_enabled or is_native_window_enabled_now:
             _LOGGER.warning("Enabling the native window during reconfigure is known to cause problems. "
@@ -358,7 +372,10 @@ class FrameProcessor(Thread):
 
         # Initialize the stream object and start the thread that keeps on reading frames
         # This thread is independent of the Camera Processing Thread
-        self.videostream = VideoStream(resolution=(self.camera_width, self.camera_height), source=source).start()
+        self.videostream, is_camera_functional = VideoStream(resolution=(self.camera_width,
+                                                                         self.camera_height),
+                                                             source=source).start()
+        self.is_camera_functional = is_camera_functional
         # For using the videostream with threading use the following :
         # videostream = VideoStream(resolution=(self.camera_width, self.camera_height),
         # source=source, enable_thread=True).start()
@@ -464,6 +481,7 @@ class FrameProcessor(Thread):
         _LOGGER.debug("Handled the reconfigure")
 
     def run(self):
+
         # these variables are used for calculation of frame per seconds (FPS)
         frame_rate_calc = 1
         freq = cv2.getTickFrequency()
@@ -531,8 +549,8 @@ class FrameProcessor(Thread):
                     xmax_model = round(boxes[i][3], 3)
 
                     # map the bounding boxes from model to the window
-                    ymin = int(max(1, (ymin_model * self.camera_height)))
-                    xmin = int(max(1, (xmin_model * self.camera_width)))
+                    ymin = int(max(0, (ymin_model * self.camera_height)))
+                    xmin = int(max(0, (xmin_model * self.camera_width)))
                     ymax = int(min(self.camera_height, (ymax_model * self.camera_height)))
                     xmax = int(min(self.camera_width, (xmax_model * self.camera_width)))
 
@@ -606,11 +624,11 @@ class FrameProcessor(Thread):
                 # wait for 1 milli second
                 cv2.waitKey(1)
 
+        WebStream.SHUTDOWN_IN_PROGRESS = True
+        _LOGGER.debug("Shutdown flag of streaming server set True")
         _LOGGER.debug("Stopping the stream ")
         self.videostream.stop()
         _LOGGER.info("Camera stream has been stopped")
         time.sleep(2)
         cv2.destroyAllWindows()
         _LOGGER.debug("All windows destroyed")
-        WebStream.SHUTDOWN_IN_PROGRESS = True
-        _LOGGER.debug("Shutdown flag of streaming server set True")
