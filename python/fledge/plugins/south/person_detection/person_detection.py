@@ -300,7 +300,11 @@ def plugin_shutdown(handle):
         # allow the stream to stop
         time.sleep(3)
         # stopping every other thread one by one
-        frame_processor.join()
+
+        # checking if the thread is started or not.
+        if frame_processor.is_camera_functional:
+            frame_processor.join()
+
         frame_processor = None
         if enable_web_streaming:
             WebStream.SHUTDOWN_IN_PROGRESS = True
