@@ -30,8 +30,6 @@ except ImportError as e:
     _LOGGER.exception("Tensorflow installation not found.")
 
 
-
-
 class Inference:
     def __init__(self):
 

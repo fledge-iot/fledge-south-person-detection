@@ -55,9 +55,18 @@ class VideoStream:
             _ = self.stream.set(4, resolution[1])
         elif detectCoralDevBoard():
             self.stream = cv2.VideoCapture(source)
+            # cannot change camera resolution on coral device through opencv API.
+        else:
+            # If the device is not supported self.stream would be None.
+            # There could be another format such as YUYV which may support changing camera resolution
+            # through Open CV API. Omitting these calls for now.
+            self.stream = cv2.VideoCapture(source)
 
         if self.stream is None:
-            _LOGGER.exception("Either the ID of video device is wrong or the device is not supported")
+            _LOGGER.exception("Either the ID of video device is wrong or the device is not supported. Please "
+                              "shut the plugin and try again with a correct device id.")
+        else:
+            _LOGGER.debug("Camera stream initialized")
 
         self.enable_thread = enable_thread
         if self.enable_thread:
@@ -72,8 +81,11 @@ class VideoStream:
         else:
             (self.grabbed, self.frame) = self.stream.read()
             if not self.grabbed:
-                _LOGGER.exception("Either the ID of video device is wrong or the device is not functional!")
+                _LOGGER.exception("The device is not functional!. Please shutdown the plugin and try again"
+                                  " with either a different camera ID or reconnect the device again. ")
                 return
+            else:
+                _LOGGER.debug("Able to capture video stream from camera.")
 
     def start(self):
         if self.enable_thread:
@@ -81,7 +93,7 @@ class VideoStream:
             t = Thread(target=self.update, args=(), name="Reader Thread")
             t.daemon = True
             t.start()
-        return self
+        return self, self.grabbed
 
     def update(self):
         # Keep looping indefinitely until the thread is stopped

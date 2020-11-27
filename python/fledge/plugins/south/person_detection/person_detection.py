@@ -116,6 +116,11 @@ loop = None
 async_thread = None
 enable_web_streaming = None
 web_stream = None
+# Keeping a fixed camera resolution for now. Can give it inside configuration. However changing
+# it is quite risky because some devices support changing camera resolution through opencv API
+# but others simply don't (Like the coral board).
+CAMERA_HEIGHT = 480
+CAMERA_WIDTH = 640
 
 
 def plugin_info():
@@ -168,8 +173,8 @@ def plugin_start(handle):
         # be (0+255)/2 = 127.5 .
         handle['input_mean'] = 127.5
         handle['input_std'] = 127.5
-        handle['camera_height'] = 640
-        handle['camera_width'] = 480
+        handle['camera_height'] = CAMERA_HEIGHT
+        handle['camera_width'] = CAMERA_WIDTH
 
         web_streaming_port_no = int(handle['web_streaming_port_no']['value'])
 
@@ -182,21 +187,50 @@ def plugin_start(handle):
             global loop
             loop.run_forever()
 
-        if enable_web_streaming:
-            web_stream = WebStream(port=web_streaming_port_no).start_web_streaming_server(local_loop=loop)
-            async_thread = Thread(target=run, name="Async Thread")
-            async_thread.daemon = True
-            async_thread.start()
-
         global frame_processor
         frame_processor = FrameProcessor(handle)
-        frame_processor.start()
+        if frame_processor.is_camera_functional:
+
+            if enable_web_streaming:
+
+                # make shutdown flag of web stream server false.
+                WebStream.SHUTDOWN_IN_PROGRESS = False
+
+                web_stream = WebStream(port=web_streaming_port_no).start_web_streaming_server(local_loop=loop)
+                async_thread = Thread(target=run, name="Async Thread")
+                async_thread.daemon = True
+                async_thread.start()
+
+            frame_processor.start()
+        else:
+            raise Exception("Camera is not functional. Please shutdown and try again. ")
 
     except Exception as ex:
         _LOGGER.exception("Human detector plugin failed to start. Details: %s", str(ex))
         raise
     else:
         _LOGGER.info("Plugin started")
+
+
+def check_need_to_shutdown(handle, new_config, parameters_to_check):
+    """
+    Checks whether shutdown is required if we change configuration.
+    Args:
+        handle: Old configuration
+        new_config: New Configuration
+        parameters_to_check: Parameters (list) whose value if changed then shutdown is required
+
+    Returns:
+        True or False
+    """
+    need_to_shutdown = False
+    for parameter in parameters_to_check:
+        old_value = handle[parameter]['value']
+        new_value = new_config[parameter]['value']
+        if new_value != old_value:
+            need_to_shutdown = True
+
+    return need_to_shutdown
 
 
 def plugin_reconfigure(handle, new_config):
@@ -210,12 +244,42 @@ def plugin_reconfigure(handle, new_config):
         new_handle: new handle to be used in the future calls
     Raises:
     """
+    global frame_processor
 
-    plugin_shutdown(handle)
-    new_handle = plugin_init(new_config)
-    plugin_start(new_handle)
+    parameters_to_check = ['camera_id', 'enable_window', 'enable_web_streaming', 'web_streaming_port_no']
+    need_to_shutdown = check_need_to_shutdown(handle, new_config, parameters_to_check)
+    if not need_to_shutdown:
+        _LOGGER.debug("No need to shutdown")
+        frame_processor.handle_new_config(new_config)
+        new_handle = plugin_init(new_config)
+        return new_handle
+    
+    else:
 
-    return new_handle
+        was_native_window_enabled = handle['enable_window']['value'] == 'true'
+        is_native_window_enabled_now = new_config['enable_window']['value'] == 'true'
+
+        # case  was_native_window_enabled  is_native_window_enabled_now
+        # 1.          True                       True
+        # 2.          True                       False
+        # 3.          False                      True
+        # 4.          False                      False
+
+        # Only case 4. should be allowed and rest of the cases are causing problems.
+        # Refer to the following link for more details
+        # https://stackoverflow.com/questions/60737852/opencv-imshow-hangs-if-called-two-times-from-a-thread
+
+        if was_native_window_enabled or is_native_window_enabled_now:
+            _LOGGER.warning("Enabling the native window during reconfigure is known to cause problems. "
+                            "Restart the plugin manually. ")
+            new_handle = plugin_init(new_config)
+            return new_handle
+
+        else:
+            plugin_shutdown(handle)
+            new_handle = plugin_init(new_config)
+            plugin_start(new_handle)
+            return new_handle
 
 
 def plugin_shutdown(handle):
@@ -236,12 +300,17 @@ def plugin_shutdown(handle):
         # allow the stream to stop
         time.sleep(3)
         # stopping every other thread one by one
-        frame_processor.join()
+
+        # checking if the thread is started or not.
+        if frame_processor.is_camera_functional:
+            frame_processor.join()
+
         frame_processor = None
         if enable_web_streaming:
             WebStream.SHUTDOWN_IN_PROGRESS = True
             web_stream.stop_server(loop)
         loop.stop()
+        # async_thread.join()
         async_thread = None
         loop = None
 
@@ -260,6 +329,7 @@ def plugin_register_ingest(handle, callback, ingest_ref):
         callback: C opaque object required to passed back to C/Python async ingest interface
         ingest_ref: C opaque object required to passed back to C/Python async ingest interface
     """
+    _LOGGER.debug("register ingest")
     global c_callback, c_ingest_ref
     c_callback = callback
     c_ingest_ref = ingest_ref
@@ -306,7 +376,10 @@ class FrameProcessor(Thread):
 
         # Initialize the stream object and start the thread that keeps on reading frames
         # This thread is independent of the Camera Processing Thread
-        self.videostream = VideoStream(resolution=(self.camera_width, self.camera_height), source=source).start()
+        self.videostream, is_camera_functional = VideoStream(resolution=(self.camera_width,
+                                                                         self.camera_height),
+                                                             source=source).start()
+        self.is_camera_functional = is_camera_functional
         # For using the videostream with threading use the following :
         # videostream = VideoStream(resolution=(self.camera_width, self.camera_height),
         # source=source, enable_thread=True).start()
@@ -383,7 +456,36 @@ class FrameProcessor(Thread):
             else:
                 time.sleep(0.2)
 
+    def handle_new_config(self, new_config):
+        """
+        If shutdown is not required then it changes the configuration on the fly.
+        Args:
+            new_config: The configuration during reconfigure.
+
+        Returns:
+              None
+        """
+
+        _LOGGER.debug("Handling the reconfigure without shutdown")
+        model = new_config['model_file']['value']
+        labels = new_config['labels_file']['value']
+        self.asset_name = new_config['asset_name']['value']
+        enable_tpu = new_config['enable_edge_tpu']['value']
+        self.min_conf_threshold = float(new_config['min_conf_threshold']['value'])
+
+        model = os.path.join(os.path.dirname(__file__), "model", model)
+        labels = os.path.join(os.path.dirname(__file__), "model", labels)
+
+        with open(labels, 'r') as f:
+            pairs = (l.strip().split(maxsplit=1) for l in f.readlines())
+            labels = dict((int(k), v) for k, v in pairs)
+
+        _ = self.inference.get_interpreter(model, enable_tpu,
+                                           labels, self.min_conf_threshold)
+        _LOGGER.debug("Handled the reconfigure")
+
     def run(self):
+
         # these variables are used for calculation of frame per seconds (FPS)
         frame_rate_calc = 1
         freq = cv2.getTickFrequency()
@@ -451,10 +553,10 @@ class FrameProcessor(Thread):
                     xmax_model = round(boxes[i][3], 3)
 
                     # map the bounding boxes from model to the window
-                    ymin = int(max(1, (ymin_model * self.camera_width)))
-                    xmin = int(max(1, (xmin_model * self.camera_height)))
-                    ymax = int(min(self.camera_width, (ymax_model * self.camera_width)))
-                    xmax = int(min(self.camera_height, (xmax_model * self.camera_height)))
+                    ymin = int(max(0, (ymin_model * self.camera_height)))
+                    xmin = int(max(0, (xmin_model * self.camera_width)))
+                    ymax = int(min(self.camera_height, (ymax_model * self.camera_height)))
+                    xmax = int(min(self.camera_width, (xmax_model * self.camera_width)))
 
                     # draw the rectangle on the frame
                     cv2.rectangle(frame, (xmin, ymin), (xmax, ymax), (10, 255, 0), 2)
@@ -496,6 +598,7 @@ class FrameProcessor(Thread):
 
             # All the results have been drawn on the frame, so it's time to display it.
             if self.shutdown_in_progress:
+                _LOGGER.debug("Shut down breaking loop")
                 break
             else:
                 # Calculate framerate
@@ -509,19 +612,27 @@ class FrameProcessor(Thread):
                     'timestamp': utils.local_timestamp(),
                     'readings': reads
                 }
+
                 async_ingest.ingest_callback(c_callback, c_ingest_ref, data)
 
                 # show the frame on the window
                 try:
                     if self.enable_window:
                         cv2.imshow("Human Detector", frame)
+
                     WebStream.FRAME = frame.copy()
+
                 except Exception as e:
                     _LOGGER.info('exception  {}'.format(e))
 
                 # wait for 1 milli second
                 cv2.waitKey(1)
 
+        WebStream.SHUTDOWN_IN_PROGRESS = True
+        _LOGGER.debug("Shutdown flag of streaming server set True")
+        _LOGGER.debug("Stopping the stream ")
         self.videostream.stop()
+        _LOGGER.info("Camera stream has been stopped")
         time.sleep(2)
         cv2.destroyAllWindows()
+        _LOGGER.debug("All windows destroyed")

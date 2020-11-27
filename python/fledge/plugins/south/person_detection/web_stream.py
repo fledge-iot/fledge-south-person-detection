@@ -33,16 +33,18 @@ class WebStream:
                             'boundary=--%s' % boundary,
         })
         await response.prepare(request)
-
         encode_param = (int(cv2.IMWRITE_JPEG_QUALITY), 90)
 
         while True:
+
             if WebStream.SHUTDOWN_IN_PROGRESS:
                 break
+
             if WebStream.FRAME is None:
                 continue
 
             result, encimg = cv2.imencode('.jpg', WebStream.FRAME, encode_param)
+
             data = encimg.tostring()
             await response.write(
                 '--{}\r\n'.format(boundary).encode('utf-8'))
@@ -72,6 +74,7 @@ class WebStream:
             asyncio.ensure_future(self.ws_app.shutdown(), loop=loop)
             asyncio.ensure_future(self.ws_handler.shutdown(2.0), loop=loop)
             asyncio.ensure_future(self.ws_app.cleanup(), loop=loop)
+
         except asyncio.CancelledError:
             pass
         except KeyError:
@@ -90,12 +93,14 @@ class WebStream:
                     self
                Raises: None
         """
-
         app = web.Application(loop=local_loop)
         app.router.add_route('GET', "/", WebStream.index)
         app.router.add_route('GET', "/image", WebStream.mjpeg_handler)
+
         handler = app.make_handler(loop=local_loop)
+
         coro_server = local_loop.create_server(handler, self.address, self.port)
+
         f = asyncio.ensure_future(coro_server, loop=local_loop)
 
         self.ws_app = app
@@ -107,6 +112,5 @@ class WebStream:
             self.ws_server = f.result()
 
         f.add_done_callback(f_callback)
+
         return self
-
-
