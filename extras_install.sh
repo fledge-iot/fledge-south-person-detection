@@ -31,7 +31,7 @@ fi
 
 py=$(python3 -V | awk '{print $2}' | awk -F. '{print $1 $2}')
 arch=$(uname -m)
-url=$(echo -n "https://dl.google.com/coral/python/tflite_runtime-2.1.0.post1-cp"; echo -n $py; echo -n "-cp"; echo -n $py; echo -n "m-linux_"; echo -n ${arch}; echo -n ".whl")
+url=$(echo -n "https://github.com/google-coral/pycoral/releases/download/release-frogfish/tflite_runtime-2.5.0-cp"; echo -n $py; echo -n "-cp"; echo -n $py; echo -n "m-linux_"; echo -n ${arch}; echo -n ".whl")
 pip3 install $url
 
 if [ ${ID} != "mendel" ]; then
