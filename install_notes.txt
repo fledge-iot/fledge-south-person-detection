@@ -1,0 +1,13 @@
+In order to use Edge TPU accelerator on devices other than coral board then you might
+need to follow the steps given below.
+
+1. echo "deb https://packages.cloud.google.com/apt coral-edgetpu-stable main" | sudo tee /etc/apt/sources.list.d/coral-edgetpu.list
+
+2. curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+
+3. sudo apt-get update
+
+4. sudo apt-get install libedgetpu1-std
+ or sudo apt-get install libedgetpu1-max depending on performance.
+
+For more details refer to https://coral.ai/docs/accelerator/get-started/#1a-on-linux
