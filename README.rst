@@ -35,8 +35,26 @@ Enable Edge TPU:
 Minimum Confidence Threshold:
         The detection results from the model will be filtered out, if the score is below this value.
 
+Source:
+        Either use a stream over a network or use a local camera device.
+        Default is set to stream.
+
+Streaming URL:
+        The URL of the network stream, if stream is to be used.
+
+Open CV Backend:
+        The backend required by Open CV to process the stream, if stream is to be used.
+        Default is set to ffmpeg. Note gstreamer is also supported but not used.
+
+Streaming Protocol:
+        The protocol over which live frames are being broad casted over the network, if stream is to be used.
+        Open CV uses tcp by default. Also Open CV can use other protocols as well.
+        The plugin does not use tcp.
+        Default is set to udp.
+
 Camera ID:
         The number associated with your video device. See /dev in your filesystem you will see video0 or video1.
+        It is required when source is set to camera.
         Default is set to 0.
 
 Enable Detection Window:
@@ -75,6 +93,7 @@ Instructions For Installation
                 Size: Discrete 2592x1944
                         Interval: Discrete 0.067s (15.000 fps)
                 Size: Discrete 0x0
+
 
 3. You can choose resolution from here.
 
