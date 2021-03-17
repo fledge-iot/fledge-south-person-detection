@@ -76,33 +76,68 @@ _DEFAULT_CONFIG = {
         'order': '5',
         'displayName': 'Minimum Confidence Threshold'
     },
+    'source': {
+        'description': 'Whether take input feed from camera or network stream',
+        'type': 'enumeration',
+        'default': 'stream',
+        'options': ['stream', 'camera'],
+        'order': '6',
+        'displayName': 'Source For Detection Camera/Stream'
+    },
+    'stream_url': {
+        'description': 'The url of the network stream if network stream is to be used.',
+        'type': 'string',
+        'default': 'rtsp://ip:port',
+        'order': '7',
+        'validity': "source == \"stream\"",
+        'displayName': 'Stream URL'
+    },
+    'opencv_backend': {
+        'description': 'Backend for processing stream from network',
+        'type': 'enumeration',
+        'default': 'ffmpeg',
+        'options': ['ffmpeg', 'gstreamer'],
+        'order': '8',
+        'validity': "source == \"stream\"",
+        'displayName': 'Opencv Backend'
+    },
+    'stream_protocol': {
+        'description': 'The protocol being used by streaming server',
+        'type': 'enumeration',
+        'default': 'udp',
+        'options': ['udp', 'tcp'],
+        'order': '9',
+        'validity': "source == \"stream\"",
+        'displayName': 'Stream Protocol'
+    },
     'camera_id': {
         'description': 'The number associated with your video device. See /dev in your '
                        'filesystem. Enter 0 to use /dev/video0, and so on.',
         'type': 'integer',
         'default': '0',
-        'order': '6',
+        'order': '10',
+        'validity': "source == \"camera\"",
         'displayName': 'Camera ID'
     },
     'enable_window': {
         'description': 'Show detection results in a window',
         'type': 'boolean',
         'default': 'false',
-        'order': '7',
+        'order': '11',
         'displayName': 'Enable Detection Window'
     },
     'enable_web_streaming': {
         'description': 'Enable web streaming on specified web streaming port',
         'type': 'boolean',
         'default': 'true',
-        'order': '8',
+        'order': '12',
         'displayName': 'Enable Web Streaming'
     },
     'web_streaming_port_no': {
         'description': 'Port number for web streaming',
         'type': 'string',
         'default': '8085',
-        'order': '9',
+        'order': '13',
         'displayName': 'Web Streaming Port',
         "validity": "enable_web_streaming == \"true\" "
     },
@@ -246,7 +281,9 @@ def plugin_reconfigure(handle, new_config):
     """
     global frame_processor
 
-    parameters_to_check = ['camera_id', 'enable_window', 'enable_web_streaming', 'web_streaming_port_no']
+    parameters_to_check = ['camera_id', 'enable_window', 'enable_web_streaming',
+                           'web_streaming_port_no',
+                           'source', 'stream_url', 'stream_protocol', 'opencv_backend']
     need_to_shutdown = check_need_to_shutdown(handle, new_config, parameters_to_check)
     if not need_to_shutdown:
         _LOGGER.debug("No need to shutdown")
@@ -367,19 +404,30 @@ class FrameProcessor(Thread):
         _ = self.inference.get_interpreter(model, enable_tpu,
                                            labels, self.min_conf_threshold)
 
-        source = int(handle['camera_id']['value'])
-
         if handle['enable_window']['value'] == 'true' and not FrameProcessor.check_background():
             self.enable_window = True
         else:
             self.enable_window = False
 
-        # Initialize the stream object and start the thread that keeps on reading frames
-        # This thread is independent of the Camera Processing Thread
-        self.videostream, is_camera_functional = VideoStream(resolution=(self.camera_width,
-                                                                         self.camera_height),
-                                                             source=source).start()
-        self.is_camera_functional = is_camera_functional
+        if handle['source']['value'] == 'camera':
+            camera_id = int(handle['camera_id']['value'])
+            # Initialize the stream object and start the thread that keeps on reading frames
+            # This thread is independent of the Camera Processing Thread
+            self.videostream, is_camera_functional = VideoStream(resolution=(self.camera_width,
+                                                                             self.camera_height),
+                                                                 source=camera_id).start()
+            self.is_camera_functional = is_camera_functional
+
+        else:
+            stream_url = handle['stream_url']['value']
+            stream_protocol = handle['stream_protocol']['value']
+            opencv_backend = handle['opencv_backend']['value']
+            self.videostream, is_camera_functional = VideoStream(resolution=(self.camera_width,
+                                                                             self.camera_height),
+                                                                 stream_url=stream_url,
+                                                                 stream_protocol=stream_protocol,
+                                                                 opencv_backend=opencv_backend).start()
+            self.is_camera_functional = is_camera_functional
         # For using the videostream with threading use the following :
         # videostream = VideoStream(resolution=(self.camera_width, self.camera_height),
         # source=source, enable_thread=True).start()
