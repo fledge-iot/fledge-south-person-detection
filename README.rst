@@ -74,32 +74,8 @@ Web Streaming Port:
 Instructions For Installation
 -----------------------------
 
-1. First run requirements.sh
-2. To see the supported configuration of the camera run
+`Mentioned in Docs <docs/index.rst>`_
 
-        v4l2-ctl --list-formats-ext --device /dev/video0
-
-    You will see something like
-        [0]: 'YUYV' (YUYV 4:2:2)
-                Size: Discrete 640x480
-                        Interval: Discrete 0.033s (30.000 fps)
-                Size: Discrete 720x480
-                        Interval: Discrete 0.033s (30.000 fps)
-                Size: Discrete 1280x720
-                        Interval: Discrete 0.033s (30.000 fps)
-                Size: Discrete 1920x1080
-                        Interval: Discrete 0.067s (15.000 fps)
-                        Interval: Discrete 0.033s (30.000 fps)
-                Size: Discrete 2592x1944
-                        Interval: Discrete 0.067s (15.000 fps)
-                Size: Discrete 0x0
-
-
-3. You can choose resolution from here.
-
-4. Above example uses Camera ID 0 to indicate use of /dev/video0 device, please use the applicable value for your setup
-
-5. Install the plugin as usual filling in parameters obtained above.
 
 -----
 FAQs
