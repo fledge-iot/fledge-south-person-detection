@@ -16,9 +16,8 @@ Also FPS (Frames per second are also displayed on the same frame.) The detection
 3. *Confidence* : The probability by which the model is sure that the detected object is a person.
 
 
-+--------+
-| |config1| |
-+--------+
+
+|config1|
 
   - **TFlite Model File**:
                             This is the name of the tflite model file that should be placed in
@@ -69,10 +68,7 @@ Also FPS (Frames per second are also displayed on the same frame.) The detection
                         Show detection results in a native window.
                         Default is set to disabled.
 
-+--------+
-| |config2| |
-+--------+
-
+|config1|
 
   - **Enable Web Streaming**:
                        Whether to stream the detected results in a browser or not.
