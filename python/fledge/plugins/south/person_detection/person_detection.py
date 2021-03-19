@@ -82,7 +82,7 @@ _DEFAULT_CONFIG = {
         'default': 'stream',
         'options': ['stream', 'camera'],
         'order': '6',
-        'displayName': 'Source For Detection Camera/Stream'
+        'displayName': 'Source of video feed'
     },
     'stream_url': {
         'description': 'The url of the network stream if network stream is to be used.',

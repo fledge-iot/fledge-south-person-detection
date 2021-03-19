@@ -63,7 +63,7 @@ class VideoStream:
 
             # not implementing other backend like gstreamer though opencv supports them as well.
             else:
-                _LOGGER.error("Only ffmpeg is implemented for now.")
+                _LOGGER.error("Only ffmpeg is supported for now.")
                 raise NotImplementedError
 
         else:

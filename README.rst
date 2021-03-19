@@ -40,7 +40,7 @@ Source:
         Default is set to stream.
 
 Streaming URL:
-        The URL of the network stream, if stream is to be used.
+        The URL of the RTSP stream, if stream is to be used. Only RTSP streams are supported for now.
 
 Open CV Backend:
         The backend required by Open CV to process the stream, if stream is to be used.
@@ -49,7 +49,7 @@ Open CV Backend:
 Streaming Protocol:
         The protocol over which live frames are being broad casted over the network, if stream is to be used.
         Open CV uses tcp by default. Also Open CV can use other protocols as well.
-        The plugin does not use tcp.
+        The plugin does not support tcp.
         Default is set to udp.
 
 Camera ID:
