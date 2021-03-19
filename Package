@@ -13,7 +13,7 @@ requirements="fledge,v4l-utils"
 
 case "$arch" in
 	x86_64)
-        requirements="${requirements},python3-opencv"
+        requirements="${requirements}"
         ;;
 
 	armv7l)
@@ -23,7 +23,7 @@ case "$arch" in
 	    requirements="${requirements},libjpeg-dev,libtiff5-dev,libjasper-dev,libpng-dev,libavcodec-dev,libavformat-dev,libswscale-dev,libv4l-dev,libopenexr-dev,libxvidcore-dev,libx264-dev,libgtk2.0-dev,libgtk-3-dev,libatlas-base-dev,gfortran,libhdf5-dev,libhdf5-serial-dev,libhdf5-103,libqtgui4,libqtwebkit4,libqt4-test"
 	    ;;
 	aarch64)
-	    requirements="${requirements},python3-opencv"
+	    requirements="${requirements}"
 	    ;;
 esac
 

@@ -29,6 +29,21 @@ if [ ${ID} = "raspbian" ]; then
    pip3 install opencv-contrib-python==4.1.0.25
 fi
 
+if [ ${ID} = "ubuntu" ]; then
+   pip3 install --upgrade pip
+   pip3 install opencv-contrib-python
+fi
+
+if [ ${ID} = "mendel" ]; then
+
+   git clone https://github.com/pjalusic/opencv4.1.1-for-google-coral.git /tmp/opencv_coral
+   cp /tmp/opencv_coral/cv2.so /usr/local/lib/python3.7/dist-packages/cv2.so
+   sudo cp -r /tmp/opencv_coral/libraries/. /usr/local/lib
+   rm -rf /tmp/opencv_coral
+
+fi
+
+
 py=$(python3 -V | awk '{print $2}' | awk -F. '{print $1 $2}')
 arch=$(uname -m)
 url=$(echo -n "https://github.com/google-coral/pycoral/releases/download/release-frogfish/tflite_runtime-2.5.0-cp"; echo -n $py; echo -n "-cp"; echo -n $py; echo -n "m-linux_"; echo -n ${arch}; echo -n ".whl")

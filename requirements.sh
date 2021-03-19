@@ -42,9 +42,6 @@ if [[ ${ID} == "raspbian" ]]; then
     sudo apt-get install libhdf5-dev libhdf5-serial-dev libhdf5-103
     sudo apt-get install libqtgui4 libqtwebkit4 libqt4-test
 
-else
-    echo "Installing Opencv "
-    sudo apt-get install python3-opencv
 fi
 
 ./extras_install.sh
