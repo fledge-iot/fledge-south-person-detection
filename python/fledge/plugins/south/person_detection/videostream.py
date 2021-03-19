@@ -45,7 +45,7 @@ class VideoStream:
     """ Camera object that controls video streaming from the Camera
     """
 
-    def __init__(self, resolution=(640, 480), framerate=30, source=0, enable_thread=False, stream_url="None",
+    def __init__(self, resolution=(640, 480), framerate=30, source=0, enable_thread=False, stream_url=None,
                  stream_protocol="udp", opencv_backend="ffmpeg"):
         # Initialize the PiCamera and the camera image stream
 
