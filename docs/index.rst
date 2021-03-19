@@ -68,7 +68,7 @@ Also FPS (Frames per second are also displayed on the same frame.) The detection
                         Show detection results in a native window.
                         Default is set to disabled.
 
-|config1|
+|config2|
 
   - **Enable Web Streaming**:
                        Whether to stream the detected results in a browser or not.
