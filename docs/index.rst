@@ -6,14 +6,14 @@ Person Detection Plugin
 =======================
 
 The *fledge-south-person-detection* detects a person on a live video feed from either a camera or on a network
-stream. It uses google's mobile net ssd version 2 to detect a person. The bounding boxes and confidence scores are displayed on the same video frame itself.
-Also FPS (Frames per second are also displayed on the same frame.) The detection results are also converted into readings. The readings have mainly three things:
+stream. It uses Google's Mobilenet SSD v2 to detect a person. The bounding boxes and confidence scores are displayed on the same video frame itself.
+Also FPS (frames per second) are also displayed on the same frame. The detection results are also converted into readings. The readings have mainly three things:
 
 1. *Count* : No of people detected.
 
-2. *Coordinates* : the coordinates of the bounding box detected (2 points each having x and y respectively)
+2. *Coordinates* : It consists of coordinates (x,y) of top-left and bottom right corners of bounding box for each detected person.
 
-3. *Confidence* : The probability by which the model is sure that the detected object is a person.
+3. *Confidence* : Confidence with which the model detected each person.
 
 
 
@@ -35,7 +35,7 @@ Also FPS (Frames per second are also displayed on the same frame.) The detection
 
   - **Enable Edge TPU**:
                            Indicates whether to use edge TPU for inference.
-                           If you don't want to use Coral Edge TPU then disbale this configuration parameter.
+                           If you don't want to use Coral Edge TPU then disable this configuration parameter.
                            Also ensure to change the name of the model file to detect.tflite if disabled.
                            Default is set to enabled.
 
@@ -49,14 +49,12 @@ Also FPS (Frames per second are also displayed on the same frame.) The detection
   - **Streaming URL**:
                          The URL of the RTSP stream, if stream is to be used. Only RTSP streams are supported for now.
 
-  - **Open CV Backend**:
+  - **OpenCV Backend**:
                          The backend required by Open CV to process the stream, if stream is to be used.
-                         Default is set to ffmpeg. Note gstreamer is also supported but not used.
+                         Default is set to ffmpeg.
 
   - **Streaming Protocol**:
-                         The protocol over which live frames are being broad casted over the network, if stream is to be used.
-                         Open CV uses tcp by default. Also Open CV can use other protocols as well.
-                         The plugin does not support tcp.
+                         The protocol over which live frames are being transported over the network, if stream is to be used.
                          Default is set to udp.
 
   - **Camera ID**:

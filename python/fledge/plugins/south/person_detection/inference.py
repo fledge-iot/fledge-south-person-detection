@@ -76,9 +76,11 @@ class Inference:
                 _LOGGER.exception("Make sure edge tpu is plugged in")
 
         else:
-
-            self.interpreter = Interpreter(model_path=model)
-            interpreter_loaded = True
+            if os.path.exists(model):
+                self.interpreter = Interpreter(model_path=model)
+                interpreter_loaded = True
+            else:
+                _LOGGER.exception("Please make sure the model file exists")
 
         if interpreter_loaded:
             self.interpreter.allocate_tensors()
@@ -91,6 +93,8 @@ class Inference:
             self.labels = labels
         else:
             _LOGGER.error("The interpreter requested is not loaded. Try again after shutting down.")
+            return None
+
         # return None if not loaded
         return self.interpreter
 

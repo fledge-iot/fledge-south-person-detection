@@ -44,12 +44,9 @@ Streaming URL:
 
 Open CV Backend:
         The backend required by Open CV to process the stream, if stream is to be used.
-        Default is set to ffmpeg. Note gstreamer is also supported but not used.
-
+        Default is set to ffmpeg.
 Streaming Protocol:
-        The protocol over which live frames are being broad casted over the network, if stream is to be used.
-        Open CV uses tcp by default. Also Open CV can use other protocols as well.
-        The plugin does not support tcp.
+        The protocol over which live frames are being transported over the network, if stream is to be used.
         Default is set to udp.
 
 Camera ID:

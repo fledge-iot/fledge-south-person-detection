@@ -96,7 +96,7 @@ _DEFAULT_CONFIG = {
         'description': 'Backend for processing stream from network',
         'type': 'enumeration',
         'default': 'ffmpeg',
-        'options': ['ffmpeg', 'gstreamer'],
+        'options': ['ffmpeg'],
         'order': '8',
         'validity': "source == \"stream\"",
         'displayName': 'Opencv Backend'
@@ -105,7 +105,7 @@ _DEFAULT_CONFIG = {
         'description': 'The protocol being used by streaming server',
         'type': 'enumeration',
         'default': 'udp',
-        'options': ['udp', 'tcp'],
+        'options': ['udp'],
         'order': '9',
         'validity': "source == \"stream\"",
         'displayName': 'Stream Protocol'
