@@ -42,6 +42,11 @@ if [[ ${ID} == "raspbian" ]]; then
     sudo apt-get install libhdf5-dev libhdf5-serial-dev libhdf5-103
     sudo apt-get install libqtgui4 libqtwebkit4 libqt4-test
 
+else
+
+  sudo apt-get install libavformat-dev
+  sudo apt-get install libswscale-dev
+
 fi
 
 ./extras_install.sh
