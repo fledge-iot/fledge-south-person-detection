@@ -562,6 +562,10 @@ class FrameProcessor(Thread):
 
             # Taking the frame the stream
             frame1 = self.videostream.read()
+            if frame1 is None:
+                _LOGGER.error("Either the stream/camera device stopped working.")
+                break
+
             frame = frame1.copy()
             # BGR to RGB
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)

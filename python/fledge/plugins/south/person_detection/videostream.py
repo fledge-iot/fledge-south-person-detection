@@ -83,8 +83,12 @@ class VideoStream:
                 self.stream = cv2.VideoCapture(source)
 
         if self.stream is None:
-            _LOGGER.exception("Either the ID of video device is wrong or the device is not supported. Please "
-                              "shut the plugin and try again with a correct device id.")
+            if stream_url is None:
+                _LOGGER.exception("Either the ID of video device is wrong or the device is not supported. Please "
+                                  "shut the plugin and try again with a correct device id.")
+            else:
+                _LOGGER.exception("Not able to capture rtsp stream. Please "
+                                  "shut the plugin ,verify that the stream is running and try again.")
         else:
             _LOGGER.debug("Camera stream initialized")
 
@@ -101,8 +105,13 @@ class VideoStream:
         else:
             (self.grabbed, self.frame) = self.stream.read()
             if not self.grabbed:
-                _LOGGER.exception("The device is not functional!. Please shutdown the plugin and try again"
-                                  " with either a different camera ID or reconnect the device again. ")
+
+                if stream_url is not None:
+                    _LOGGER.exception("The stream is not running!. Please shutdown the plugin and try again")
+                else:
+                    _LOGGER.exception("The device is not functional!. Please shutdown the plugin and try again"
+                                      " with either a different camera ID or reconnect the device again. ")
+
                 return
             else:
                 _LOGGER.debug("Able to capture video stream from camera.")

@@ -89,7 +89,8 @@ class Inference:
             self.floating_model = (self.input_details[0]['dtype'] == np.float32)
             self.min_conf_threshold = min_conf_threshold
             self.labels = labels
-
+        else:
+            _LOGGER.error("The interpreter requested is not loaded. Try again after shutting down.")
         # return None if not loaded
         return self.interpreter
 
