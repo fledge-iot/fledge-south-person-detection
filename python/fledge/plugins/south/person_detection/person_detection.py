@@ -224,7 +224,7 @@ def plugin_start(handle):
 
         global frame_processor
         frame_processor = FrameProcessor(handle)
-        if frame_processor.is_camera_functional:
+        if frame_processor.is_camera_functional and frame_processor.interpreter_loaded:
 
             if enable_web_streaming:
 
@@ -339,7 +339,7 @@ def plugin_shutdown(handle):
         # stopping every other thread one by one
 
         # checking if the thread is started or not.
-        if frame_processor.is_camera_functional:
+        if frame_processor.is_camera_functional and frame_processor.interpreter_loaded:
             frame_processor.join()
 
         frame_processor = None
@@ -400,9 +400,13 @@ class FrameProcessor(Thread):
             labels = dict((int(k), v) for k, v in pairs)
 
         # instance of the self.inference class
+        self.interpreter_loaded = False
         self.inference = Inference()
-        _ = self.inference.get_interpreter(model, enable_tpu,
-                                           labels, self.min_conf_threshold)
+
+        local_interpreter = self.inference.get_interpreter(model, enable_tpu,
+                                                           labels, self.min_conf_threshold)
+        if local_interpreter is not None:
+            self.interpreter_loaded = True
 
         if handle['enable_window']['value'] == 'true' and not FrameProcessor.check_background():
             self.enable_window = True
