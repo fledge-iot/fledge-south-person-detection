@@ -99,7 +99,7 @@ _DEFAULT_CONFIG = {
         'options': ['ffmpeg'],
         'order': '8',
         'validity': "source == \"stream\"",
-        'displayName': 'Opencv Backend'
+        'displayName': 'OpenCV Backend'
     },
     'stream_protocol': {
         'description': 'The protocol being used by streaming server',
@@ -152,7 +152,7 @@ async_thread = None
 enable_web_streaming = None
 web_stream = None
 # Keeping a fixed camera resolution for now. Can give it inside configuration. However changing
-# it is quite risky because some devices support changing camera resolution through opencv API
+# it is quite risky because some devices support changing camera resolution through openCV API
 # but others simply don't (Like the coral board).
 CAMERA_HEIGHT = 480
 CAMERA_WIDTH = 640

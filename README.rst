@@ -42,8 +42,8 @@ Source:
 Streaming URL:
         The URL of the RTSP stream, if stream is to be used. Only RTSP streams are supported for now.
 
-Open CV Backend:
-        The backend required by Open CV to process the stream, if stream is to be used.
+OpenCV Backend:
+        The backend required by OpenCV to process the stream, if stream is to be used.
         Default is set to ffmpeg.
 Streaming Protocol:
         The protocol over which live frames are being transported over the network, if stream is to be used.

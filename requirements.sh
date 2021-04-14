@@ -44,8 +44,7 @@ if [[ ${ID} == "raspbian" ]]; then
 
 else
 
-  sudo apt-get install libavformat-dev
-  sudo apt-get install libswscale-dev
+  sudo apt-get install -y libavformat-dev libswscale-dev
 
   if [[ ${ID} == "ubuntu" ]]; then
     sudo apt-get install -y ffmpeg libsm6 libxext6 libxrender-dev

@@ -9,7 +9,7 @@ The *fledge-south-person-detection* detects a person on a live video feed from e
 stream. It uses Google's Mobilenet SSD v2 to detect a person. The bounding boxes and confidence scores are displayed on the same video frame itself.
 Also FPS (frames per second) are also displayed on the same frame. The detection results are also converted into readings. The readings have mainly three things:
 
-1. *Count* : No of people detected.
+1. *Count* : The number of people detected.
 
 2. *Coordinates* : It consists of coordinates (x,y) of top-left and bottom right corners of bounding box for each detected person.
 
@@ -50,7 +50,7 @@ Also FPS (frames per second) are also displayed on the same frame. The detection
                          The URL of the RTSP stream, if stream is to be used. Only RTSP streams are supported for now.
 
   - **OpenCV Backend**:
-                         The backend required by Open CV to process the stream, if stream is to be used.
+                         The backend required by OpenCV to process the stream, if stream is to be used.
                          Default is set to ffmpeg.
 
   - **Streaming Protocol**:
@@ -133,7 +133,7 @@ There are two ways to get the video feed.
 
         Note :  fill the <ip_of_the_machine> with ip of the machine which will be used to stream video. Also fill <name_of_file> with the name of mp4 file.
 
-        4. or stream from a camera using the following
+        4. You can also stream from a camera using the following
 
         .. code-block:: console
 
@@ -141,13 +141,15 @@ There are two ways to get the video feed.
 
         Fill the following :
 
-        <index_of_video_device>  with the index mentioned in above v4l2 command
+        <index_of_video_device> The index with which you ran the v4l2 command mentioned above. for example video0.
 
-        <supported_height_of_camera_image> height you get see in the example when you ran v4l2 command mentioned above Discrete 640x480  here 480 is height
+        <supported_height_of_camera_image> Height you get when you ran v4l2 command mentioned above. For example Discrete 640x480.  Here 480 is height.
 
-        <supported_width_of_camera_image> height you get see in the example when you ran v4l2 command mentioned above Discrete 640x480  here 640 is width
+        <supported_width_of_camera_image> Width you get when you ran v4l2 command mentioned above. For example Discrete 640x480.  Here 640 is width.
 
         <ip_of_the_machine>   ip of the machine which will be used to stream video.
+
+
 
 Once you have run the plugin by filling appropriate parameters Now go to your browser
 and enter  *ip_where_fledge_is_running:the_port_for_web_streaming*
