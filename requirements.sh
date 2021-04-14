@@ -24,28 +24,32 @@ set -e
 ID=$(cat /etc/os-release | grep -w ID | cut -f2 -d"=")
 if [[ ${ID} == "raspbian" ]]; then
     # For handling images
-    sudo apt-get install libjpeg-dev libtiff5-dev libjasper-dev libpng-dev
+    sudo apt-get install -y libjpeg-dev libtiff5-dev libjasper-dev libpng-dev
 
     # For handling videos
-    sudo apt-get install libavcodec-dev libavformat-dev libswscale-dev libv4l-dev libopenexr-dev
-    sudo apt-get install libxvidcore-dev libx264-dev
+    sudo apt-get install -y libavcodec-dev libavformat-dev libswscale-dev libv4l-dev libopenexr-dev
+    sudo apt-get install -y libxvidcore-dev libx264-dev
 
     # have removed libgdk-pixbuf2.0-dev libpango1.0-dev libfontconfig1-dev libcairo2-dev python3-pyqt5 not required by plugin
     # For Displaying guis
-    sudo apt-get install libgtk2.0-dev libgtk-3-dev
+    sudo apt-get install -y libgtk2.0-dev libgtk-3-dev
 
     # For speeding things up
-    sudo apt-get install libatlas-base-dev gfortran
+    sudo apt-get install -y libatlas-base-dev gfortran
 
     # For hdf5 datasets and QT compatibility
     # These are required if we dont compile opencv.
-    sudo apt-get install libhdf5-dev libhdf5-serial-dev libhdf5-103
-    sudo apt-get install libqtgui4 libqtwebkit4 libqt4-test
+    sudo apt-get install -y libhdf5-dev libhdf5-serial-dev libhdf5-103
+    sudo apt-get install -y libqtgui4 libqtwebkit4 libqt4-test
 
 else
 
   sudo apt-get install libavformat-dev
   sudo apt-get install libswscale-dev
+
+  if [[ ${ID} == "ubuntu" ]]; then
+    sudo apt-get install -y ffmpeg,libsm6,libxext6,libxrender-dev
+  fi
 
 fi
 

@@ -13,7 +13,7 @@ requirements="fledge,v4l-utils"
 
 case "$arch" in
 	x86_64)
-        requirements="${requirements},libavformat-dev,libswscale-dev"
+        requirements="${requirements},libavformat-dev,libswscale-dev,ffmpeg,libsm6,libxext6,libxrender-dev"
         ;;
 
 	armv7l)
