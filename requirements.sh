@@ -48,7 +48,7 @@ else
   sudo apt-get install libswscale-dev
 
   if [[ ${ID} == "ubuntu" ]]; then
-    sudo apt-get install -y ffmpeg,libsm6,libxext6,libxrender-dev
+    sudo apt-get install -y ffmpeg libsm6 libxext6 libxrender-dev
   fi
 
 fi
