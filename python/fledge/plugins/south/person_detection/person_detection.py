@@ -344,8 +344,9 @@ def plugin_shutdown(handle):
 
         frame_processor = None
         if enable_web_streaming:
-            WebStream.SHUTDOWN_IN_PROGRESS = True
-            web_stream.stop_server(loop)
+            if web_stream is not None:
+                WebStream.SHUTDOWN_IN_PROGRESS = True
+                web_stream.stop_server(loop)
         loop.stop()
         # async_thread.join()
         async_thread = None
