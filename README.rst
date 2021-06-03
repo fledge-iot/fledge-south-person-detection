@@ -35,8 +35,23 @@ Enable Edge TPU:
 Minimum Confidence Threshold:
         The detection results from the model will be filtered out, if the score is below this value.
 
+Source:
+        Either use a stream over a network or use a local camera device.
+        Default is set to stream.
+
+Streaming URL:
+        The URL of the RTSP stream, if stream is to be used. Only RTSP streams are supported for now.
+
+OpenCV Backend:
+        The backend required by OpenCV to process the stream, if stream is to be used.
+        Default is set to ffmpeg.
+Streaming Protocol:
+        The protocol over which live frames are being transported over the network, if stream is to be used.
+        Default is set to udp.
+
 Camera ID:
         The number associated with your video device. See /dev in your filesystem you will see video0 or video1.
+        It is required when source is set to camera.
         Default is set to 0.
 
 Enable Detection Window:
@@ -56,31 +71,8 @@ Web Streaming Port:
 Instructions For Installation
 -----------------------------
 
-1. First run requirements.sh
-2. To see the supported configuration of the camera run
+`Mentioned in Docs <docs/index.rst>`_
 
-        v4l2-ctl --list-formats-ext --device /dev/video0
-
-    You will see something like
-        [0]: 'YUYV' (YUYV 4:2:2)
-                Size: Discrete 640x480
-                        Interval: Discrete 0.033s (30.000 fps)
-                Size: Discrete 720x480
-                        Interval: Discrete 0.033s (30.000 fps)
-                Size: Discrete 1280x720
-                        Interval: Discrete 0.033s (30.000 fps)
-                Size: Discrete 1920x1080
-                        Interval: Discrete 0.067s (15.000 fps)
-                        Interval: Discrete 0.033s (30.000 fps)
-                Size: Discrete 2592x1944
-                        Interval: Discrete 0.067s (15.000 fps)
-                Size: Discrete 0x0
-
-3. You can choose resolution from here.
-
-4. Above example uses Camera ID 0 to indicate use of /dev/video0 device, please use the applicable value for your setup
-
-5. Install the plugin as usual filling in parameters obtained above.
 
 -----
 FAQs

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # FLEDGE_BEGIN
-# See: http://fledge.readthedocs.io/
+# See: http://fledge-iot.readthedocs.io/
 # FLEDGE_END
 
 """ Helper module for starting a separate thread for reading frame from the Camera Device
@@ -10,6 +10,7 @@
 import logging
 import subprocess
 from threading import Thread
+import os
 
 import cv2
 
@@ -44,27 +45,50 @@ class VideoStream:
     """ Camera object that controls video streaming from the Camera
     """
 
-    def __init__(self, resolution=(640, 480), framerate=30, source=0, enable_thread=False):
+    def __init__(self, resolution=(640, 480), framerate=30, source=0, enable_thread=False, stream_url=None,
+                 stream_protocol="udp", opencv_backend="ffmpeg"):
         # Initialize the PiCamera and the camera image stream
 
-        if detect_mjpg_camera(source):
-            # only mjpg  pixel format and coral camera are supported.
-            self.stream = cv2.VideoCapture(source)
-            _ = self.stream.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
-            _ = self.stream.set(3, resolution[0])
-            _ = self.stream.set(4, resolution[1])
-        elif detectCoralDevBoard():
-            self.stream = cv2.VideoCapture(source)
-            # cannot change camera resolution on coral device through opencv API.
+        if stream_url is not None:
+            if opencv_backend == 'ffmpeg':
+                if stream_protocol == "udp":
+                    os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = "rtsp_transport;udp"
+                    self.stream = cv2.VideoCapture(stream_url, cv2.CAP_FFMPEG)
+
+                # not implementing tcp for now for that Need to create stream at tcp.
+                else:
+                    _LOGGER.error("Only streams using udp protocol are being processed for now. Need a "
+                                  "way to send stream via tcp. For more information refer to documentation")
+                    raise NotImplementedError
+
+            # not implementing other backend like gstreamer though opencv supports them as well.
+            else:
+                _LOGGER.error("Only ffmpeg is supported for now.")
+                raise NotImplementedError
+
         else:
-            # If the device is not supported self.stream would be None.
-            # There could be another format such as YUYV which may support changing camera resolution
-            # through Open CV API. Omitting these calls for now.
-            self.stream = cv2.VideoCapture(source)
+            if detect_mjpg_camera(source):
+                # only mjpg  pixel format and coral camera are supported.
+                self.stream = cv2.VideoCapture(source)
+                _ = self.stream.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+                _ = self.stream.set(3, resolution[0])
+                _ = self.stream.set(4, resolution[1])
+            elif detectCoralDevBoard():
+                self.stream = cv2.VideoCapture(source)
+                # cannot change camera resolution on coral device through opencv API.
+            else:
+                # If the device is not supported self.stream would be None.
+                # There could be another format such as YUYV which may support changing camera resolution
+                # through Open CV API. Omitting these calls for now.
+                self.stream = cv2.VideoCapture(source)
 
         if self.stream is None:
-            _LOGGER.exception("Either the ID of video device is wrong or the device is not supported. Please "
-                              "shut the plugin and try again with a correct device id.")
+            if stream_url is None:
+                _LOGGER.exception("Either the ID of video device is wrong or the device is not supported. Please "
+                                  "shut the plugin and try again with a correct device id.")
+            else:
+                _LOGGER.exception("Not able to capture rtsp stream. Please "
+                                  "shut the plugin ,verify that the stream is running and try again.")
         else:
             _LOGGER.debug("Camera stream initialized")
 
@@ -81,8 +105,13 @@ class VideoStream:
         else:
             (self.grabbed, self.frame) = self.stream.read()
             if not self.grabbed:
-                _LOGGER.exception("The device is not functional!. Please shutdown the plugin and try again"
-                                  " with either a different camera ID or reconnect the device again. ")
+
+                if stream_url is not None:
+                    _LOGGER.exception("The stream is not running!. Please shutdown the plugin and try again")
+                else:
+                    _LOGGER.exception("The device is not functional!. Please shutdown the plugin and try again"
+                                      " with either a different camera ID or reconnect the device again. ")
+
                 return
             else:
                 _LOGGER.debug("Able to capture video stream from camera.")

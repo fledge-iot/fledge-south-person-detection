@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # FLEDGE_BEGIN
-# See: http://fledge.readthedocs.io/
+# See: http://fledge-iot.readthedocs.io/
 # FLEDGE_END
 
 """ Helper Class for loading the model and performing the inference on it 
@@ -54,6 +54,7 @@ class Inference:
                 is not found
 
         """
+        interpreter_loaded = False
         if enable_tpu == 'true':
             try:
                 # loading the Edge TPU Runtime
@@ -63,6 +64,8 @@ class Inference:
                     self.interpreter = Interpreter(model_path=model,
                                                    experimental_delegates=[load_delegate(EDGETPU_SHARED_LIB,
                                                                          {'device': device[0]} if device else {})])
+                    interpreter_loaded = True
+
                 else:
                     _LOGGER.exception("Please make sure the model file exists")
 
@@ -73,18 +76,26 @@ class Inference:
                 _LOGGER.exception("Make sure edge tpu is plugged in")
 
         else:
+            if os.path.exists(model):
+                self.interpreter = Interpreter(model_path=model)
+                interpreter_loaded = True
+            else:
+                _LOGGER.exception("Please make sure the model file exists")
 
-            self.interpreter = Interpreter(model_path=model)
+        if interpreter_loaded:
+            self.interpreter.allocate_tensors()
+            self.input_details = self.interpreter.get_input_details()
+            self.output_details = self.interpreter.get_output_details()
+            self.height_for_model = self.input_details[0]['shape'][1]
+            self.width_for_model = self.input_details[0]['shape'][2]
+            self.floating_model = (self.input_details[0]['dtype'] == np.float32)
+            self.min_conf_threshold = min_conf_threshold
+            self.labels = labels
+        else:
+            _LOGGER.error("The interpreter requested is not loaded. Try again after shutting down.")
+            return None
 
-        self.interpreter.allocate_tensors()
-
-        self.input_details = self.interpreter.get_input_details()
-        self.output_details = self.interpreter.get_output_details()
-        self.height_for_model = self.input_details[0]['shape'][1]
-        self.width_for_model = self.input_details[0]['shape'][2]
-        self.floating_model = (self.input_details[0]['dtype'] == np.float32)
-        self.min_conf_threshold = min_conf_threshold
-        self.labels = labels
+        # return None if not loaded
         return self.interpreter
 
     def perform_inference(self, input_data):
