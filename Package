@@ -11,6 +11,8 @@ plugin_package_name=fledge-${plugin_type}-person-detection
 #   3. Package manager specific packages we depend on
 requirements="fledge,v4l-utils"
 
+os=$(cat /etc/os-release | grep -w ID | cut -f2 -d"=")
+
 case "$arch" in
 	x86_64)
         requirements="${requirements},libavformat-dev,libswscale-dev,ffmpeg,libsm6,libxext6,libxrender-dev"
@@ -23,7 +25,16 @@ case "$arch" in
 	    requirements="${requirements},libjpeg-dev,libtiff5-dev,libjasper-dev,libpng-dev,libavcodec-dev,libavformat-dev,libswscale-dev,libv4l-dev,libopenexr-dev,libxvidcore-dev,libx264-dev,libgtk2.0-dev,libgtk-3-dev,libatlas-base-dev,gfortran,libhdf5-dev,libhdf5-serial-dev,libhdf5-103,libqtgui4,libqtwebkit4,libqt4-test"
 	    ;;
 	aarch64)
-	    requirements="${requirements},libavformat-dev,libswscale-dev"
+              case "$os" in
+
+                ubuntu)
+                         requirements="${requirements},libavformat-dev,libswscale-dev,ffmpeg,libsm6,libxext6,libxrender-dev"
+                         ;;
+
+                 mendel)
+                       	 requirements="${requirements},libavformat-dev,libswscale-dev"
+                         ;;
+              esac
 	    ;;
 esac
 
