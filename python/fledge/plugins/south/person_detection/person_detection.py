@@ -17,6 +17,8 @@ import subprocess
 import logging
 import os
 import time
+import tarfile
+import glob
 import threading
 from threading import Thread
 import cv2
@@ -30,6 +32,9 @@ from fledge.plugins.south.person_detection.videostream import VideoStream
 from fledge.plugins.south.person_detection.inference import Inference
 from fledge.plugins.south.person_detection.web_stream import WebStream
 
+from fledge.common.bucket_client.bucket_client import BucketClient
+from fledge.common.bucket_client.model_query_builder import ModelQueryBuilder
+
 _LOGGER = logger.setup(__name__, level=logging.INFO)
 
 _DEFAULT_CONFIG = {
@@ -39,19 +44,19 @@ _DEFAULT_CONFIG = {
         'default': 'person_detection',
         'readonly': 'true'
     },
-    'model_file': {
-        'description': 'TFlite model file to use for inference',
+    'model_name': {
+        'description': 'TFlite model name to use for inference as stored in bucket',
         'type': 'string',
-        'default': 'detect_edgetpu.tflite',
+        'default': 'People',
         'order': '1',
-        'displayName': 'TFlite Model File'
+        'displayName': 'TFlite model name'
     },
-    'labels_file': {
-        'description': 'Labels file used during inference',
+    'model_version': {
+        'description': 'Model version as stored in bucket',
         'type': 'string',
-        'default': 'coco_labels.txt',
+        'default': '1.2',
         'order': '2',
-        'displayName': 'Labels File'
+        'displayName': 'Model version'
     },
     'asset_name': {
         'description': 'Asset name',
@@ -185,7 +190,76 @@ def plugin_init(config):
         Raises:
     """
     data = copy.deepcopy(config)
+    if 'bucket_client' not in data or not isinstance(data['bucket_client'], BucketClient):
+        urlBase = data['mgmt_client_url_base']['value']
+        host, port = urlBase.split(':')
+        _LOGGER.info("urlBase={}, host={}, port={}".format(urlBase, host, port))
+        data['bucket_client'] = BucketClient(host, port)
+    else:
+        _LOGGER.info("BucketClient is already instantiated")
+
     return data
+
+
+def get_model_files(bucket_client, model_name, model_version, enable_tpu):
+    """ Get the model files from the bucket service
+        Args:
+            bucket_client: Bucket client handle to use bucket services
+            model_name: Model name e.g. People
+            model_version: Model's version e.g. 1.2
+            enable_tpu: Indicates whether model is intended to be run on TPU or CPU
+        Returns:
+            model and labels file name paths
+        Raises:
+    """
+    global loop
+
+    model = labels = ""
+
+    model_attrs = {"name": model_name, "type": "model", "version": model_version,
+                       "hardware": "tpu" if enable_tpu == 'true' else "cpu"}
+
+    payload = ModelQueryBuilder()
+    for k, v in model_attrs.items():
+        payload = payload.MATCH([k, "=", v])
+
+    query = payload.payload()
+    _LOGGER.info("bucket_client.query_models: query payload={}".format(query))
+
+    res = loop.run_until_complete(bucket_client.query_models(query))
+    _LOGGER.info("bucket_client.query_models returned {}".format(res))
+    if len(res['matches']) > 1:
+        _LOGGER.info("Found more than one matching model, picking last one")
+
+    if len(res['matches']) < 1:
+        _LOGGER.error("Didn't find matching ML model from bucket service")
+        return model, labels
+
+    res = res['matches'][0]
+    _LOGGER.info("Chosen model : {}".format(res))
+
+    model_dir = os.path.join("/tmp", "foglamp_person_detection_model")
+    os.system('rm -rf {}'.format(model_dir))
+    os.makedirs(model_dir)
+
+    _LOGGER.info("Un-compressing archive {} in {}".format(res['file'], model_dir))
+
+    # tokens = res['file'].split('.')
+    # if tokens[1] != 'tar' or tokens[2] != 'bz2':
+    #     _LOGGER.error("Can handle model files only in tar.bz2 archive, cannot handle {}".format(res['file']))
+
+    try:
+        tar = tarfile.open(res['file'], "r:bz2")
+        tar.extractall(model_dir)
+        tar.close()
+        model = glob.glob(model_dir + "/*.tflite")[0]
+        labels = glob.glob(model_dir + "/*labels.txt")[0]
+        _LOGGER.info("model file={}, labels file={}".format(model, labels))
+    except Exception as ex:
+        _LOGGER.error("Unable to extract model files from (assumed) bzip2 compressed archive: {}, exception={}"
+                        .format(res['file'], str(ex)))
+
+    return model, labels
 
 
 def plugin_start(handle):
@@ -280,6 +354,9 @@ def plugin_reconfigure(handle, new_config):
     Raises:
     """
     global frame_processor
+
+    new_config['mgmt_client_url_base'] = handle['mgmt_client_url_base']
+    new_config['bucket_client'] = handle['bucket_client']
 
     parameters_to_check = ['camera_id', 'enable_window', 'enable_web_streaming',
                            'web_streaming_port_no',
@@ -387,14 +464,16 @@ class FrameProcessor(Thread):
         # the width of the detection window on which frames are to be displayed
         self.camera_width = handle['camera_width']
 
-        model = handle['model_file']['value']
-        labels = handle['labels_file']['value']
+        model_name = handle['model_name']['value']
+        model_version = handle['model_version']['value']
         self.asset_name = handle['asset_name']['value']
         enable_tpu = handle['enable_edge_tpu']['value']
         self.min_conf_threshold = float(handle['min_conf_threshold']['value'])
 
-        model = os.path.join(os.path.dirname(__file__), "model", model)
-        labels = os.path.join(os.path.dirname(__file__), "model", labels)
+        model, labels = get_model_files(handle['bucket_client'], model_name, model_version, enable_tpu)
+
+        if model == "" or labels == "":
+            raise Exception("Unable to get/extract ML model file & labels")
 
         with open(labels, 'r') as f:
             pairs = (l.strip().split(maxsplit=1) for l in f.readlines())
@@ -520,14 +599,16 @@ class FrameProcessor(Thread):
         """
 
         _LOGGER.debug("Handling the reconfigure without shutdown")
-        model = new_config['model_file']['value']
-        labels = new_config['labels_file']['value']
+        model_name = new_config['model_name']['value']
+        model_version = new_config['model_version']['value']
         self.asset_name = new_config['asset_name']['value']
         enable_tpu = new_config['enable_edge_tpu']['value']
         self.min_conf_threshold = float(new_config['min_conf_threshold']['value'])
 
-        model = os.path.join(os.path.dirname(__file__), "model", model)
-        labels = os.path.join(os.path.dirname(__file__), "model", labels)
+        model, labels = get_model_files(new_config['bucket_client'], model_name, model_version, enable_tpu)
+
+        if model == "" or labels == "":
+            raise Exception("Unable to get/extract ML model file & labels")
 
         with open(labels, 'r') as f:
             pairs = (l.strip().split(maxsplit=1) for l in f.readlines())
