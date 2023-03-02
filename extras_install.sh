@@ -31,7 +31,7 @@ fi
 
 if [ ${ID} = "ubuntu" ]; then
    pip3 install --upgrade pip
-   pip3 install opencv-contrib-python
+   pip3 install opencv-contrib-python==4.6.0.66
 fi
 
 if [ ${ID} = "mendel" ]; then
