@@ -20,6 +20,10 @@
 ## Author: Ashish Jabble
 ##
 
+os_name=$(grep -o '^NAME=.*' /etc/os-release | cut -f2 -d\" | sed 's/"//g')
+os_version=$(grep -o '^VERSION_ID=.*' /etc/os-release | cut -f2 -d\" | sed 's/"//g')
+echo "Platform is ${os_name}, Version: ${os_version}"
+
 ID=$(cat /etc/os-release | grep -w ID | cut -f2 -d"=")
 
 # Requirements are from this link
@@ -43,11 +47,15 @@ if [ ${ID} = "mendel" ]; then
 
 fi
 
+if [ "${os_name}" = "Ubuntu" ] && [ "${os_version}" = "20.04" ]; then
+   python3 -m pip  install tflite_runtime==2.8.0
+else
 
-py=$(python3 -V | awk '{print $2}' | awk -F. '{print $1 $2}')
-arch=$(uname -m)
-url=$(echo -n "https://github.com/google-coral/pycoral/releases/download/release-frogfish/tflite_runtime-2.5.0-cp"; echo -n $py; echo -n "-cp"; echo -n $py; echo -n "m-linux_"; echo -n ${arch}; echo -n ".whl")
-python3 -m pip  install $url
+   py=$(python3 -V | awk '{print $2}' | awk -F. '{print $1 $2}')
+   arch=$(uname -m)
+   url=$(echo -n "https://github.com/google-coral/pycoral/releases/download/release-frogfish/tflite_runtime-2.5.0-cp"; echo -n $py; echo -n "-cp"; echo -n $py; echo -n "m-linux_"; echo -n ${arch}; echo -n ".whl")
+   python3 -m pip  install $url
+fi
 
 if [ ${ID} != "mendel" ]; then
   echo "In order to use Edge TPU, please install edge TPU runtime, libedgetpu1-std
