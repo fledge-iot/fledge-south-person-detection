@@ -504,7 +504,8 @@ class FrameProcessor(Thread):
             reads['person_' + str(r_index + 1) + '_' + 'x2'] = objs[r_index]['bounding_box'][2]
             reads['person_' + str(r_index + 1) + '_' + 'y2'] = objs[r_index]['bounding_box'][3]
 
-        reads['count'] = len(objs)
+        if len(objs) > 0:
+            reads['count'] = len(objs)
 
         return reads
 
@@ -678,14 +679,15 @@ class FrameProcessor(Thread):
                 frame_rate_calc = 1 / time1
 
                 reads = FrameProcessor.construct_readings(objs)
-                data = {
-                    'asset': self.asset_name,
-                    'timestamp': utils.local_timestamp(),
-                    'readings': reads
-                }
-
-                async_ingest.ingest_callback(c_callback, c_ingest_ref, data)
-
+                if len(reads) > 0:
+                    # send readings when count > 0
+                    data = {
+                        'asset': self.asset_name,
+                        'timestamp': utils.local_timestamp(),
+                        'readings': reads
+                    }
+                    async_ingest.ingest_callback(c_callback, c_ingest_ref, data)
+                
                 # show the frame on the window
                 try:
                     if self.enable_window:
