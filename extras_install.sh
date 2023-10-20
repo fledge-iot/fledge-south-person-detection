@@ -20,18 +20,22 @@
 ## Author: Ashish Jabble
 ##
 
+os_name=$(grep -o '^NAME=.*' /etc/os-release | cut -f2 -d\" | sed 's/"//g')
+os_version=$(grep -o '^VERSION_ID=.*' /etc/os-release | cut -f2 -d\" | sed 's/"//g')
+echo "Platform is ${os_name}, Version: ${os_version}"
+
 ID=$(cat /etc/os-release | grep -w ID | cut -f2 -d"=")
 
 # Requirements are from this link
 # https://github.com/google-coral/examples-camera/blob/master/opencv/install_requirements.sh
 
 if [ ${ID} = "raspbian" ]; then
-   pip3 install opencv-contrib-python==4.1.0.25
+   python3 -m pip install opencv-contrib-python==4.1.0.25
 fi
 
 if [ ${ID} = "ubuntu" ]; then
-   pip3 install --upgrade pip
-   pip3 install opencv-contrib-python
+   python3 -m pip install --upgrade pip
+   python3 -m pip install opencv-contrib-python==4.6.0.66
 fi
 
 if [ ${ID} = "mendel" ]; then
@@ -43,11 +47,20 @@ if [ ${ID} = "mendel" ]; then
 
 fi
 
+if [ "${os_name}" = "Ubuntu" ] && [ "${os_version}" = "20.04" ]; then
+   # For ubuntu 20.04 install tflite runtime == 2.8.0
+   python3 -m pip install tflite_runtime==2.8.0
+else
 
-py=$(python3 -V | awk '{print $2}' | awk -F. '{print $1 $2}')
-arch=$(uname -m)
-url=$(echo -n "https://github.com/google-coral/pycoral/releases/download/release-frogfish/tflite_runtime-2.5.0-cp"; echo -n $py; echo -n "-cp"; echo -n $py; echo -n "m-linux_"; echo -n ${arch}; echo -n ".whl")
-pip3 install $url
+   # For every other platform install tflite runtime by constraucting a url.
+   py=$(python3 -V | awk '{print $2}' | awk -F. '{print $1 $2}')
+   # Get the python version for this platform
+   arch=$(uname -m)
+   # Get the architecture for this platform.
+   url=$(echo -n "https://github.com/google-coral/pycoral/releases/download/release-frogfish/tflite_runtime-2.5.0-cp"; echo -n $py; echo -n "-cp"; echo -n $py; echo -n "m-linux_"; echo -n ${arch}; echo -n ".whl")
+   echo "Going to fetch pip package for tflite runtime from $url" 
+   python3 -m pip install $url
+fi
 
 if [ ${ID} != "mendel" ]; then
   echo "In order to use Edge TPU, please install edge TPU runtime, libedgetpu1-std

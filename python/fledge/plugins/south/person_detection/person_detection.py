@@ -119,25 +119,39 @@ _DEFAULT_CONFIG = {
         'validity': "source == \"camera\"",
         'displayName': 'Camera ID'
     },
+    'camera_height': {
+        'description': 'The height of the canvas on which the the frame is to be displayed.',
+        'type': 'integer',
+        'default': '480',
+        'order': '11',
+        'displayName': 'Camera Height'
+    },
+    'camera_width': {
+        'description': 'The width of the canvas on which the the frame is to be displayed.',
+        'type': 'integer',
+        'default': '640',
+        'order': '12',
+        'displayName': 'Camera Width'
+    },
     'enable_window': {
         'description': 'Show detection results in a window',
         'type': 'boolean',
         'default': 'false',
-        'order': '11',
+        'order': '13',
         'displayName': 'Enable Detection Window'
     },
     'enable_web_streaming': {
         'description': 'Enable web streaming on specified web streaming port',
         'type': 'boolean',
         'default': 'true',
-        'order': '12',
+        'order': '14',
         'displayName': 'Enable Web Streaming'
     },
     'web_streaming_port_no': {
         'description': 'Port number for web streaming',
         'type': 'string',
         'default': '8085',
-        'order': '13',
+        'order': '15',
         'displayName': 'Web Streaming Port',
         "validity": "enable_web_streaming == \"true\" "
     },
@@ -151,11 +165,9 @@ loop = None
 async_thread = None
 enable_web_streaming = None
 web_stream = None
-# Keeping a fixed camera resolution for now. Can give it inside configuration. However changing
+# Keeping a fixed camera resolution for now. Can give it inside configuration. However, changing
 # it is quite risky because some devices support changing camera resolution through openCV API
 # but others simply don't (Like the coral board).
-CAMERA_HEIGHT = 480
-CAMERA_WIDTH = 640
 
 
 def plugin_info():
@@ -168,7 +180,7 @@ def plugin_info():
 
     return {
         'name': 'Person Detection plugin',
-        'version': '2.1.0',
+        'version': '2.2.0',
         'mode': 'async',
         'type': 'south',
         'interface': '1.0',
@@ -208,8 +220,8 @@ def plugin_start(handle):
         # be (0+255)/2 = 127.5 .
         handle['input_mean'] = 127.5
         handle['input_std'] = 127.5
-        handle['camera_height'] = CAMERA_HEIGHT
-        handle['camera_width'] = CAMERA_WIDTH
+        handle['camera_height'] = int(handle['camera_height']['value'])
+        handle['camera_width'] = int(handle['camera_width']['value'])
 
         web_streaming_port_no = int(handle['web_streaming_port_no']['value'])
 
@@ -492,7 +504,8 @@ class FrameProcessor(Thread):
             reads['person_' + str(r_index + 1) + '_' + 'x2'] = objs[r_index]['bounding_box'][2]
             reads['person_' + str(r_index + 1) + '_' + 'y2'] = objs[r_index]['bounding_box'][3]
 
-        reads['count'] = len(objs)
+        if len(objs) > 0:
+            reads['count'] = len(objs)
 
         return reads
 
@@ -522,6 +535,8 @@ class FrameProcessor(Thread):
         _LOGGER.debug("Handling the reconfigure without shutdown")
         model = new_config['model_file']['value']
         labels = new_config['labels_file']['value']
+        self.camera_height = int(new_config['camera_height']['value'])
+        self.camera_width = int(new_config['camera_width']['value'])
         self.asset_name = new_config['asset_name']['value']
         enable_tpu = new_config['enable_edge_tpu']['value']
         self.min_conf_threshold = float(new_config['min_conf_threshold']['value'])
@@ -664,14 +679,15 @@ class FrameProcessor(Thread):
                 frame_rate_calc = 1 / time1
 
                 reads = FrameProcessor.construct_readings(objs)
-                data = {
-                    'asset': self.asset_name,
-                    'timestamp': utils.local_timestamp(),
-                    'readings': reads
-                }
-
-                async_ingest.ingest_callback(c_callback, c_ingest_ref, data)
-
+                if len(reads) > 0:
+                    # send readings when count > 0
+                    data = {
+                        'asset': self.asset_name,
+                        'timestamp': utils.local_timestamp(),
+                        'readings': reads
+                    }
+                    async_ingest.ingest_callback(c_callback, c_ingest_ref, data)
+                
                 # show the frame on the window
                 try:
                     if self.enable_window:

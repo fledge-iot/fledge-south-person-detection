@@ -1,5 +1,5 @@
-.. |config1| image:: images/config_1.png
-.. |config2| image:: images/config_2.png
+.. |config1| image:: images/person_detection1.jpg
+.. |config2| image:: images/person_detection2.jpg
 
 
 Person Detection Plugin
@@ -62,11 +62,18 @@ Also FPS (frames per second) are also displayed on the same frame. The detection
                         It is required when source is set to camera.
                         Default is set to 0.
 
+|config2|
+
+  - **Camera Height**:
+                        The height of the canvas in which frame is to be displayed. Bounding box will be adjusted to
+                        this camera height. Default is 480.
+  - **Camera Width**:
+                        The width of the canvas in which frame is to be displayed. Bounding box will be adjusted to
+                        this camera width. Default is 640.
+
   - **Enable Detection Window**:
                         Show detection results in a native window.
                         Default is set to disabled.
-
-|config2|
 
   - **Enable Web Streaming**:
                        Whether to stream the detected results in a browser or not.
